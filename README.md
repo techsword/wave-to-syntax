@@ -2,6 +2,17 @@
 
 This repo hosts the code for 
 
+```
+@misc{shen2023wave,
+      title={Wave to Syntax: Probing spoken language models for syntax}, 
+      author={Gaofei Shen and Afra Alishahi and Arianna Bisazza and Grzegorz Chrupała},
+      year={2023},
+      eprint={2305.18957},
+      archivePrefix={arXiv},
+      primaryClass={cs.CL}
+}
+```
+
 ## Installation
 
 Clone repo and set up and activate a virtual environment with conda:
