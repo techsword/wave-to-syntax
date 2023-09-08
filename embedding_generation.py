@@ -4,14 +4,14 @@ from itertools import islice
 
 import numpy as np
 import torch
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader, Dataset, Subset
 from tqdm.auto import tqdm
 from transformers import (AutoModel, AutoTokenizer, Wav2Vec2Config,
                           Wav2Vec2Model)
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-from utils.custom_classes import Corpus, textCorpus
+from .utils.custom_classes import Corpus, textCorpus
 
 
 def load_fast_vgs_model(model_path):
@@ -33,6 +33,23 @@ def load_fast_vgs_model(model_path):
 
     return model
 
+def load_vg_hubert(model_path = '~/work_dir/syllable-discovery/vg-hubert_3'):
+    '''
+    instructions on https://github.com/jasonppy/syllable-discovery
+    '''
+    from models import audio_encoder
+
+    model_path = os.path.expanduser(model_path)
+    with open(os.path.join(model_path, "args.pkl"), "rb") as f:
+        model_args = pickle.load(f)
+    model = audio_encoder.AudioEncoder(model_args)
+    bundle = torch.load(os.path.join(model_path, "best_bundle.pth"))
+    model.carefully_load_state_dict(bundle['dual_encoder'], load_all=True)
+    model.eval()
+    model = model.to(device)
+
+    return model
+
 def select_vgs_model(modelname):
     '''
     see load_fast_vgs_model() and select_model()
@@ -46,6 +63,10 @@ def select_vgs_model(modelname):
         checkpoint_id = 'fast_vgs_family/model_path/fast-vgs-plus-coco'
         MODEL_ID = "fast-vgs-plus"
         model = load_fast_vgs_model(checkpoint_id)
+    elif modelname == "vg-hubert":
+        MODEL_ID = 'vg-hubert'
+        model_path = '~/work_dir/syllable-discovery/vg-hubert_3'
+        model = load_vg_hubert(model_path)
     hf_model = None   
     tokenizer = None
     return model, tokenizer, MODEL_ID.split("/")[-1]
@@ -90,7 +111,7 @@ def select_model(modelname):
     return model, tokenizer, MODEL_ID.split("/")[-1]
 
 
-def run_feat_gen(modelname = 'wav2vec2_small', dataset_csv = "dataset_spokencoco_val.csv", save_dir = 'embeddings', rewrite = False, CLS = False):
+def run_feat_gen(modelname = 'wav2vec2_small', dataset_csv = "dataset_spokencoco_val.csv", save_dir = 'embeddings', rewrite = False, CLS = False, subset = None):
     '''
     modelname: name of the model, string
     dataset_csv: relative path of the dataset csv to pass on to textCorpus or Corpus classes
@@ -98,8 +119,9 @@ def run_feat_gen(modelname = 'wav2vec2_small', dataset_csv = "dataset_spokencoco
     rewrite: assign to yes if rewrite is intended
     CLS: only concerns the BERT and DeBERTa models, choose if the embedding is a meanpooled vector or just the CLS vector
     '''
-    if 'fast-vgs' not in modelname:
+    if 'vg' not in modelname:
             model, tokenizer, model_ID = select_model(modelname=modelname)
+
     else:
         try:
             model, tokenizer, model_ID = select_vgs_model(modelname=modelname)
@@ -118,6 +140,7 @@ def run_feat_gen(modelname = 'wav2vec2_small', dataset_csv = "dataset_spokencoco
         tqdm.write(f"{save_file} generating extracted embeddings from {dataset_ID} using {model_ID}")
         if model_ID == "BOW":
             dataset = textCorpus(csv_file = dataset_csv)
+            dataset = Subset(dataset, range(subset)) if subset != None else dataset
             annot_list, lab_list, wav_path_list = zip(*dataset)
             feat_list, audiolen_list, wordcount_list = [], [], []
             feat_list = model.transform(tqdm(annot_list)).toarray()
@@ -125,6 +148,7 @@ def run_feat_gen(modelname = 'wav2vec2_small', dataset_csv = "dataset_spokencoco
         elif tokenizer != None:
             save_file = save_file.replace('.pt', '_CLS.pt') if CLS == True else save_file
             dataset = textCorpus(csv_file = dataset_csv)
+            dataset = Subset(dataset, range(subset)) if subset != None else dataset
             dataloader = DataLoader(dataset, shuffle = False, num_workers=0)
             feat_list, annot_list, lab_list, audiolen_list,wordcount_list, wav_path_list = [],[],[],[],[],[]
             model = model.to(device)
@@ -144,6 +168,7 @@ def run_feat_gen(modelname = 'wav2vec2_small', dataset_csv = "dataset_spokencoco
             # tqdm.write(f"there are {len(feat_list)} in the extracted dataset, each tensor is {features[0].shape}")
         else:
             dataset = Corpus(csv_file=dataset_csv)
+            dataset = Subset(dataset, range(subset)) if subset != None else dataset
             dataloader = DataLoader(dataset, shuffle = False, num_workers=0)
             feat_list, annot_list, lab_list, audiolen_list,wordcount_list, wav_path_list = [],[],[],[],[],[]
             model = model.to(device)
@@ -154,15 +179,19 @@ def run_feat_gen(modelname = 'wav2vec2_small', dataset_csv = "dataset_spokencoco
                 wordcount_list.append(wordcount)
                 wav_path_list.append(wav_path)
                 with torch.inference_mode():
-                    if 'fast-vgs' not in model_ID:
+                    if 'vg' not in model_ID:
                         # features, _ = model.to(device).extract_features(audio.squeeze(1).to(device))
                         outputs = model(audio.squeeze(1).to(device), output_hidden_states = True)
                         features = outputs.hidden_states
 
 
                     elif 'fast-vgs' in model_ID:
-                        
                         features = model(source=audio.squeeze(1).to(device), padding_mask=None, mask=False, superb=True)['hidden_states']
+                    elif 'vg-hubert' in model_ID:
+                        features = []
+                        for layer in range(len(model.encoder.layers)):
+                            out = model(audio.squeeze(1).to(device), padding_mask=None, mask=False, tgt_layer=layer, need_attention_weights=False, pre_feats= False)
+                            features.append(out['features'].squeeze(0).cpu())
                     features = torch.stack(features).squeeze(1).mean(1).detach().cpu().numpy()
                     feat_list.append(features)
         tqdm.write(f'finished generation and saving features to {save_file}')
@@ -172,7 +201,8 @@ def run_feat_gen(modelname = 'wav2vec2_small', dataset_csv = "dataset_spokencoco
 if __name__ == "__main__":
     models = ['BOW', 'wav2vec2_small']#,'wav2vec2_random', 'wav2vec2_large_ft', 'wav2vec2_small_ft', 'hubert_base_ls960','bert']#,'deberta','fast-vgs-plus','fast-vgs','bert-large']
     datasets = ['dataset_librispeech_train-clean-100.csv', "dataset_spokencoco_val.csv"]
-    # Iterates through the model and datasets to generate embeddings
-    for modelname in tqdm(models):
-        for dataset_csv in tqdm(datasets):
-            run_feat_gen(modelname, dataset_csv, rewrite=False, CLS=True)
+    run_feat_gen('vg-hubert', datasets[0], subset = 5000)
+    # # Iterates through the model and datasets to generate embeddings
+    # for modelname in tqdm(models):
+    #     for dataset_csv in tqdm(datasets):
+    #         run_feat_gen(modelname, dataset_csv, rewrite=False, CLS=True)

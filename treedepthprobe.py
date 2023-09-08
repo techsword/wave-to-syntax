@@ -180,9 +180,9 @@ if __name__ == "__main__":
     all_embedding_files = [x for x in os.listdir(embedding_path) if '.pt' in x]
     embedding_files = [os.path.join(embedding_path,x) for x in all_embedding_files if "BOW" not in x]
     bow_embedding_files = [os.path.join(embedding_path,x) for x in all_embedding_files if "BOW" in x]
-    run_baseline(embedding_files=embedding_files)
+    # run_baseline(embedding_files=embedding_files)
     run_model(embedding_files=embedding_files, combi=False)
-    run_model(embedding_files=embedding_files, combi=True)
+    # run_model(embedding_files=embedding_files, combi=True)
 
     # # Due to the large size of the BoW representation, it will take approx. 1hr to run for one dataset.
     # run_model(bow_embedding_files, combi = False)

@@ -22,7 +22,8 @@ from utils.struct_probe_utils import (L1DepthLoss, L1DistanceLoss,
                                      WordPairReporter, WordReporter)
 
 ### There are nan results in some spearmanr correlations. this was resolved by changing the mean function in reporter to nanmean.
-
+### This is a trimmed version of structural probe from https://github.com/john-hewitt/structural-probes 
+### Need significant improvement
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -77,7 +78,6 @@ def get_dep_distance_matrix(sent):
     N = torch.zeros((len(doc)))
     for i, d1 in enumerate(doc):
         N[i] = nx.shortest_path_length(graph, source=d1.text.lower(), target = d1.sent.root.text.lower())
-        #print("Completed row {}".format(i))
         for j, d2 in enumerate(doc):
             if  i > j: # No need to re-compute lower triangular
                 M[i, j] = M[j, i]
@@ -210,7 +210,7 @@ def predict(probe, dataset):
         predictions_by_batch.append(predictions.detach().cpu().numpy())
     return predictions_by_batch
 
-def run_report_results(probe, dataset, reporter, layer, mode, probe_params_path = 'layer0_predictor.params', save_dir = 'sp_data/'):
+def run_report_results(probe, dataset, reporter, probe_params_path = 'layer0_predictor.params', save_dir = 'sp_data/'):
     """
     Reports results from a structural probe according to args.
     By default, does so only for dev set.
@@ -244,7 +244,6 @@ def find_nans():
 
     for prediction_batch, (data_batch, label_batch, length_batch,batch) in zip(dev_predictions, test_dataloader):
         for prediction, label, length in zip(prediction_batch, label_batch,length_batch):
-        # words = observation.sentence
             length = int(length)
             prediction = prediction[:length,:length]
             label = label[:length,:length].cpu()
@@ -285,6 +284,11 @@ def main(args, emb_file, mode = 'twd'):
         test_dataloader = DataLoader(test_data, batch_size=32, collate_fn=custom_pad, shuffle=False)
 
 
+        if not os.path.isdir(args['probe_training']['save_dir']):
+            os.mkdir(args['probe_training']['save_dir'])
+        save_dir_model = os.path.join(args['probe_training']['save_dir'],modelname)
+        if not os.path.isdir(save_dir_model):
+            os.mkdir(save_dir_model)
 
         train_until_convergence(probe   = probe_, 
                                 loss    = loss_fn, 
@@ -292,122 +296,17 @@ def main(args, emb_file, mode = 'twd'):
                                 dev_dataset=test_dataloader, 
                                 max_epochs=30, 
                                 layer=layer, 
-                                params_path = probe_params_path)
+                                params_path = probe_params_path,
+                                save_dir = save_dir_model)
+                                # save_dir=args['probe_training']['save_dir'])
+        if not os.path.isdir(args['reporting']['root']):
+            os.mkdir(args['reporting']['root'])
         run_report_results(probe = probe_, 
                            dataset = test_dataloader, 
                            reporter= reporter_fn,
-                           layer=layer, mode = mode,
-                           probe_params_path=probe_params_path)
-
-
-
-def analyze(result_dir = 'structural-probe-results/means/', mode = 'twd'):
-    import os
-
-    import pandas as pd
-    import plotnine as p9
-    result_csv = os.path.join(result_dir, mode+'_results.csv')
-    if os.path.isfile(result_csv):
-        df = pd.read_csv(result_csv, index_col=0)
-    else:
-        mode_filter = '_'+mode
-        
-        all_out = [x for x in os.listdir(result_dir) if os.path.isfile(os.path.join(result_dir,x)) and mode_filter in x]
-        mean_out = [x for x in all_out if 'mean' in x]
-        result_dict = {}
-        for i,result in enumerate(mean_out):
-            modelname = result.split('_')[0]
-            datasetname = result.split('_')[1]
-            f = open(os.path.join(result_dir, result), "r")
-            try:
-                layer = int(result.split('.')[0][3:])
-            except:
-                layer = int(result.split('.')[0].split('_')[-1])
-
-            result_dict[i] = {'layer': layer,
-                            'spearmanr':float(f.read().splitlines()[0]),
-                            'model': modelname,
-                            'dataset': datasetname
-                            }
-
-        df = pd.DataFrame.from_dict(result_dict, orient='index')
-        df = df.sort_index()
-        df.model = df.model.str.replace(r'^wav2vec$','wav2vec2-small',regex=True)
-        df.model = df.model.str.replace(r'^checkpoint-10000$','wav2vec2-small-ft',regex=True)
-        df.model = df.model.str.replace(r'^wav2vec2-large-english$','wav2vec2-large-ft',regex=True)
-
-        df.dataset = df.dataset.str.replace(r'^small$','spokencoco',regex=True)
-        df.loc[df.model.str.contains('fast-vgs'),'layer'] = df[df.model.str.contains('fast-vgs')].layer - 1
-        df.loc[df.model.str.contains('uncased'),'layer'] = df[df.model.str.contains('uncased')].layer - 1
-
-        df = df[df.layer != -1]
-        # df.loc[:,'layer'] = df['layer']+1
-        df.loc[:,'norm_layer'] = df.groupby('model').layer.transform(lambda x: x / x.max())
-        df = df.sort_values(by=['model','dataset','layer'])
-        df = df.reset_index(drop=True)
-
-        df.to_csv(result_csv)
-
-    mode_dict = {'twd': 'Word Distance Task',
-                 'wd': 'Word Depth Task'}
-    figure = (p9.ggplot(df,p9.aes('norm_layer', 'spearmanr', color='model', shape = 'dataset'))
-        + p9.geom_point() 
-        # + p9.scale_color_manual(colors)
-        + p9.geom_line()
-        + p9.theme_linedraw()
-        + p9.facet_wrap('~ model')
-        + p9.labels.ggtitle(mode_dict[mode])
-        + p9.theme(axis_text_x = p9.element_blank(),dpi=300)
-        )
-
-    return figure
-
-
-def interactive_run_this():
-    result_dir = '/home/gshen/work_dir/spoken-model-syntax-probe/structural-probe-results/varying_mtl' 
-    mode = 'twd'
-    import os
-
-    import pandas as pd
-    import plotnine as p9
-    mode_filter = '_'+mode
-    all_out = [x for x in os.listdir(result_dir) if os.path.isfile(os.path.join(result_dir,x)) and mode_filter in x]
-    mean_out = [x for x in all_out if 'mean' in x]
-    result_dict = {}
-    for i,result in enumerate(mean_out):
-        modelname = result.split('_')[0]
-        datasetname = result.split('_')[1]
-        f = open(os.path.join(result_dir, result), "r")
-        try:
-            layer = int(result.split('.')[0][3:])
-        except:
-            layer = int(result.split('.')[0].split('_')[-1])
-        result_dict[i] = {'layer': layer,
-                        'spearmanr':float(f.read().splitlines()[0]),
-                        'model': modelname,
-                        'dataset': datasetname
-                        }
-    df = pd.DataFrame.from_dict(result_dict, orient='index')
-    df = df.sort_index()
-    special_models_idx = df.groupby(['model'])['layer'].transform(max) == 12
-    df.loc[special_models_idx,'layer'] = df[special_models_idx]['layer']-1
-    df = df.drop(df[df.layer < 0].index)
-
-    df.loc[:,'norm_layer'] = df.groupby('model').layer.transform(lambda x: x / x.max())
-    df = df.sort_values(by=['model','dataset','layer'])
-    df = df.reset_index(drop=True)
-    mode_dict = {'twd': 'Word Distance Task',
-                'wd': 'Word Depth Task'}
-
-    figure = (p9.ggplot(df,p9.aes('norm_layer', 'spearmanr', color='model', shape = 'dataset'))
-        + p9.geom_point() 
-        # + p9.scale_color_manual(colors)
-        + p9.geom_line()
-        + p9.theme_linedraw()
-        + p9.facet_wrap('~ model')
-        + p9.labels.ggtitle(mode_dict[mode])
-        + p9.theme(axis_text_x = p9.element_blank(),dpi=300)
-        )
+                           probe_params_path=probe_params_path,
+                           save_dir=save_dir_model)
+                        #    save_dir=args['probe_training']['save_dir'])
 
 
 if __name__ == '__main__':
@@ -418,7 +317,7 @@ if __name__ == '__main__':
                         default='segmented_embeddings/wav2vec_small_spokencoco.pt', 
                         help='choose the embedding file')
 
-    args = {'device': 'cuda','probe_training':{'epochs':30}, 'reporting':{'root': 'structural-probe-results', 'reporting_methods': ['spearmanr']}}
+    args = {'device': 'cuda','probe_training':{'epochs':30, 'save_dir': 'sp_data/'}, 'reporting':{'root': 'structural-probe-results', 'reporting_methods': ['spearmanr']}}
 
 
     cli_args = parser.parse_args()

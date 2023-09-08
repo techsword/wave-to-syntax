@@ -23,7 +23,7 @@ def compute_kernel(f, data1, trees_filtered, normalize = True):
         kernel_container.append(list((f(tree1, tree2)/denom, data1[-1],data2[-1])))
     return np.array(kernel_container)
 
-def generate_kernel_regress(tree_paths, seed = 42, alpha = 0.5, num_anchors = 200, save_path = 'regress-data', normalization = True, parallel = False, rewrite = False):
+def generate_kernel_regress(tree_paths, seed = 42, alpha = 0.5, num_anchors = 200, save_path = 'regress-data', normalization = True, parallel = False, rewrite = False, subset = None):
     random.seed(seed)
     K = Kernel(alpha=alpha)
     for generated_tree in tree_paths:
@@ -37,6 +37,7 @@ def generate_kernel_regress(tree_paths, seed = 42, alpha = 0.5, num_anchors = 20
         else:
             tree_list = torch.load(generated_tree)
             word_upper_limit = 52 if 'libri' in generated_tree else 20
+            tree_list = tree_list if subset == None else tree_list[:subset]
             trees_filtered = [x for x in tree_list if len(str.split(x[1])) < word_upper_limit]
             trees_filtered = [[item, i] for i, item in enumerate(trees_filtered)][:]
             random.shuffle(trees_filtered)

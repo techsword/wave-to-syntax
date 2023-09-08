@@ -10,8 +10,8 @@ from sklearn.feature_extraction.text import CountVectorizer
 from torch.utils.data import DataLoader, Dataset
 from tqdm.auto import tqdm
 
-from utils.custom_classes import textCorpus, textCorpus_no_depth
-from utils.custom_functions import read_json_save_csv, walk_librispeech_dirs
+from .utils.custom_classes import textCorpus, textCorpus_no_depth
+from .utils.custom_functions import read_json_save_csv, walk_librispeech_dirs
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 sr = 16000
