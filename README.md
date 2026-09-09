@@ -39,9 +39,12 @@ and `spec-file.txt` are removed.
 1. `preprocessing.py` builds the dataset csv files and the bag-of-words model.
 2. `forced_alignment.py` prepares per-utterance text and converts word-aligned TextGrid files to csv.
 3. `embedding_generation.py` extracts utterance-level layerwise embeddings.
-4. `extract_segmented_embeddings.py` extracts word-segmented embeddings.
+4. `extract_segmented_embeddings.py` extracts word-segmented embeddings. This is
+   a standalone export: no script in this repo consumes its output. The probe
+   scripts read the utterance-level embeddings from step 3.
 5. `treedepthprobe.py`, `treekernel_prep.py` and `treekernelprobe.py` run the probes.
-6. `finetune.py` fine-tunes wav2vec2-base on the combined corpus.
+6. `finetune.py` fine-tunes wav2vec2-base on the combined corpus. This needs
+   `accelerate` (in `requirements.txt`).
 
 ## Datasets
 
@@ -96,10 +99,11 @@ in `embedding_generation.py`:
 | `wav2vec2_random` | random weights from `Wav2Vec2Config` |
 | `BOW` | `bow_model.pt`, built by `preprocessing.py` |
 
-The fine-tuned checkpoint `techsword/wav2vec2-small-libri-scc-ft-ckp-10000` is
-the Hugging Face equivalent of the local fairseq checkpoint `wav2vec_small.pt`
-used in the paper. The code loads models with `transformers`; fairseq is not
-required.
+The local fairseq checkpoint `wav2vec_small.pt` used in the paper is the
+pretrained base model, which is `facebook/wav2vec2-base` in the table above. The
+fine-tuned model is `techsword/wav2vec2-small-libri-scc-ft-ckp-10000`, the
+paper's `checkpoint-10000`. The code loads models with `transformers`; fairseq
+is not required.
 
 ### FaST-VGS
 
@@ -154,7 +158,13 @@ python treekernel_prep.py
 python treekernelprobe.py >> treekernel.out
 ```
 
-Both probe scripts read embeddings from `embeddings/` in the repo root.
+Prerequisites:
+
+- `treekernel_prep.py` reads every `*_generated_trees.pt` file in the current
+  directory (written by `preprocessing.py`) and writes the kernels to
+  `regress-data/`.
+- `treekernelprobe.py` reads the kernels from `regress-data/`.
+- Both probe scripts read embeddings from `embeddings/` in the repo root.
 
 ## Fine-tuning
 
