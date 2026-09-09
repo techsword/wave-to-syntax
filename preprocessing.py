@@ -87,11 +87,12 @@ def make_bow_model(save_path = 'bow_model.pt',
     return cv
 
 
-def main():
+def main(spokencoco_root='~/SpokenCOCO/', spokencoco_split='val',
+         librispeech_root='~/work_dir/librispeech-train/', libri_split='train-clean-100'):
+    # Dataset roots are machine-local and exposed as CLI options (see README
+    # "Datasets").
 
     # spokencoco pre-preprocessing 
-    spokencoco_root = '~/SpokenCOCO/'
-    spokencoco_split = 'val'
     spokencoco_csv = 'spokencoco_'+spokencoco_split+'.csv'
 
     if os.path.isfile(spokencoco_csv) == False:
@@ -107,8 +108,6 @@ def main():
         print(f"{spokencoco_csv} exists already! not overwriting")
     
     # librispeech pre-preprocessing 
-    librispeech_root = '~/work_dir/librispeech-train/'
-    libri_split = 'train-clean-100' # 'test-clean'
     librispeech_csv = 'librispeech_'+libri_split+'.csv'
 
     if os.path.isfile(librispeech_csv) == False:
@@ -128,5 +127,22 @@ def main():
         make_dataset_csv(csv_file=csvs[x], dataset_root_dir=dataset_root_dir, rewrite=False)
     make_bow_model()
 
+
 if __name__ == "__main__":
-    main()
+    import argparse
+    parser = argparse.ArgumentParser(
+        description='Build dataset csv files and the bag-of-words model.')
+    parser.add_argument('--spokencoco_root', default='~/SpokenCOCO/',
+                        help='Root of the extracted SpokenCOCO dataset.')
+    parser.add_argument('--spokencoco_split', default='val',
+                        help='SpokenCOCO split to use (default: val).')
+    parser.add_argument('--librispeech_root', default='~/work_dir/librispeech-train/',
+                        help='Root that contains the LibriSpeech split directory.')
+    parser.add_argument('--libri_split', default='train-clean-100',
+                        help='LibriSpeech split to use (default: train-clean-100).')
+    cli = parser.parse_args()
+
+    main(spokencoco_root=cli.spokencoco_root,
+         spokencoco_split=cli.spokencoco_split,
+         librispeech_root=cli.librispeech_root,
+         libri_split=cli.libri_split)

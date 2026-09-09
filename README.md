@@ -15,52 +15,149 @@ This repo hosts the code for
 
 ## Installation
 
-Clone repo and set up and activate a virtual environment with conda:
+Python 3.10 or 3.11.
+
 ```
-conda create --name wav2syn --file requirements.txt
-conda activate wav2syn
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 ```
-The exact configuration of the conda environment used to conduct the experiments can be found in `spec-file.txt`
 
-## Pre-processing 
+For a CPU-only install, install torch and torchaudio from the PyTorch CPU
+index first:
 
-modify the dataset paths within and run `python preprocessing.py` to generate a dataset csv file for the textCorpus and Corpus classes.
+```
+pip install torch==2.5.1 torchaudio==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+pip install -r requirements.txt
+```
 
-`preprocessing.py` also uses the stanza parser to save all the constituency trees for each utterance in the dataset.
+`requirements.txt` is the single dependency file. The previous `environment.yml`
+and `spec-file.txt` are removed.
 
-### Datasets
+## Pipeline
 
-This project have implemented the embedding extraction script for LibriSpeech and SpokenCOCO corpus. You can download the two corpora from the links here [SpokenCOCO](https://data.csail.mit.edu/placesaudio/SpokenCOCO.tar.gz) [LibriSpeech](https://www.openslr.org/12). 
+1. `preprocessing.py` builds the dataset csv files and the bag-of-words model.
+2. `forced_alignment.py` prepares per-utterance text and converts word-aligned TextGrid files to csv.
+3. `embedding_generation.py` extracts utterance-level layerwise embeddings.
+4. `extract_segmented_embeddings.py` extracts word-segmented embeddings.
+5. `treedepthprobe.py`, `treekernel_prep.py` and `treekernelprobe.py` run the probes.
+6. `finetune.py` fine-tunes wav2vec2-base on the combined corpus.
 
-After downloading and extracting the datasets, read the `main()` function in `preprocessing.py` and change the root directories of the datasets and splits you want to use. 
+## Datasets
 
-Running `preprocessing.py` generates dataset csv files that can be understood by the probing scripts.
+Download [SpokenCOCO](https://data.csail.mit.edu/placesaudio/SpokenCOCO.tar.gz)
+and [LibriSpeech](https://www.openslr.org/12), then extract them. The dataset
+paths are not hardcoded; pass them on the command line.
 
-The preprocessing script also makes the bag-of-words model at the same time.
+Build the dataset csv files and the bag-of-words model:
 
-### Models
+```
+python preprocessing.py \
+    --spokencoco_root /path/to/SpokenCOCO \
+    --spokencoco_split val \
+    --librispeech_root /path/to/LibriSpeech \
+    --libri_split train-clean-100
+```
 
-This repo uses Huggingface Hub to load models.
+This writes `spokencoco_val.csv`, `librispeech_train-clean-100.csv`, the
+`dataset_*.csv` files used by the extraction scripts, and `bow_model.pt`.
 
-If you would like to replicate findings with the FaST-VGS family of models, please check instructions on https://github.com/jasonppy/FaST-VGS-Family.
+## Forced alignment
 
-### Extract embeddings from spoken language model
+`forced_alignment.py` splits the transcripts into per-utterance text files, and
+converts word-aligned TextGrid files to csv. Run an external forced aligner
+(for example [Montreal Forced Aligner](https://montreal-forced-aligner.readthedocs.io/))
+between the two steps.
 
-Feature extraction have been implemented in `embedding_generation.py`. It might be desirable to modify `embedding_generation.py ` to limit what model you want to investigate on. The script will save the extracted features including the meanpooled layerwise embedding, the treedepth, the annotation, the audio path, audio length and wordcount to a .pt file under `embeddings`.
+```
+# 1. write per-utterance transcripts
+python forced_alignment.py --libri-root /path/to/train-clean-100 \
+                           --scc-root /path/to/SpokenCOCO
+# 2. align with an external tool, then convert TextGrid files to csv
+python forced_alignment.py --tg-root /path/to/TextGrids
+```
 
+Options: `--libri-root`, `--scc-root`, `--scc-csv` (default
+`spokencoco_val.csv`), `--tg-root`.
 
+## Models
 
-## Running TreeDepth probe
+Text and speech models are loaded from the Hugging Face Hub by `select_model()`
+in `embedding_generation.py`:
 
+| name | checkpoint |
+|---|---|
+| `wav2vec2_small` | `facebook/wav2vec2-base` |
+| `wav2vec2_small_ft` | `techsword/wav2vec2-small-libri-scc-ft-ckp-10000` |
+| `wav2vec2_large` | `facebook/wav2vec2-large` |
+| `wav2vec2_large_ft` | `jonatasgrosman/wav2vec2-large-english` |
+| `hubert_base_ls960` | `facebook/hubert-base-ls960` |
+| `bert`, `bert-large` | `bert-base-uncased`, `bert-large-uncased` |
+| `wav2vec2_random` | random weights from `Wav2Vec2Config` |
+| `BOW` | `bow_model.pt`, built by `preprocessing.py` |
 
-Run  
+The fine-tuned checkpoint `techsword/wav2vec2-small-libri-scc-ft-ckp-10000` is
+the Hugging Face equivalent of the local fairseq checkpoint `wav2vec_small.pt`
+used in the paper. The code loads models with `transformers`; fairseq is not
+required.
+
+### FaST-VGS
+
+The FaST-VGS models are not on the Hugging Face Hub. Download them manually from
+[jasonppy/FaST-VGS-Family](https://github.com/jasonppy/FaST-VGS-Family) and put
+the checkpoints in this layout:
+
+```
+fast_vgs_family/model_path/fast-vgs-coco/
+fast_vgs_family/model_path/fast-vgs-plus-coco/
+```
+
+Install the FaST-VGS package so that `fast_vgs_family` is importable (see that
+repo). If you use another location, pass it with `--fast_vgs_root`.
+
+## Extracting embeddings
+
+Utterance-level layerwise embeddings:
+
+```
+python embedding_generation.py --models wav2vec2_small \
+                               --datasets dataset_spokencoco_val.csv
+```
+
+Options: `--models`, `--datasets`, `--save_dir` (default `embeddings`),
+`--fast_vgs_root` (default `fast_vgs_family/model_path`), `--rewrite`,
+`--no_cls`.
+
+Word-segmented embeddings:
+
+```
+python extract_segmented_embeddings.py --model_path facebook/wav2vec2-base \
+    --dataset scc --root /path/to/SpokenCOCO --aligned_path /path/to/aligned
+```
+
+Options: `--model_path` (Hugging Face id or local Hugging Face checkpoint),
+`--dataset` (`scc` or `libri`), `--csv`, `--root`, `--aligned_path`,
+`--save_dir` (default `segmented_embeddings`).
+
+## Running the probes
+
+Tree-depth probe:
+
 ```
 python treedepthprobe.py >> treedepth.out
 ```
 
-## Running TreeKernel probe
-Run  
+Tree-kernel probe:
+
 ```
 python treekernel_prep.py
 python treekernelprobe.py >> treekernel.out
 ```
+
+Both probe scripts read embeddings from `embeddings/` in the repo root.
+
+## Fine-tuning
+
+`finetune.py` fine-tunes `facebook/wav2vec2-base` on a `combined_libri_scc_DS`
+dataset saved with `datasets`. It also needs a `vocab.json` CTC vocabulary in
+the repo root. This file and the combined dataset are not shipped with the repo.
