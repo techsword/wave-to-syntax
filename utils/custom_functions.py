@@ -26,7 +26,16 @@ def loading_pretrained_model(model_id_or_path):
     or the path to a local Hugging Face checkpoint directory.
     '''
     from torchaudio.models.wav2vec2.utils import import_huggingface_model
-    from transformers import Wav2Vec2Model
+    from transformers import AutoConfig, Wav2Vec2Model
+
+    config = AutoConfig.from_pretrained(model_id_or_path)
+    model_type = getattr(config, 'model_type', None)
+    if model_type != 'wav2vec2':
+        raise ValueError(
+            f'{model_id_or_path!r} has model_type={model_type!r}, but only '
+            "wav2vec2 checkpoints are supported: the torchaudio "
+            'import_huggingface_model conversion used here is only valid for '
+            'wav2vec2 architectures. Pick a wav2vec2 checkpoint instead.')
 
     hf_model = Wav2Vec2Model.from_pretrained(model_id_or_path)
     return import_huggingface_model(hf_model)

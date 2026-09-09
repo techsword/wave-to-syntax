@@ -221,6 +221,7 @@ def main(model, dataset, model_path, save_dir='segmented_embeddings', csv_file=N
     if os.path.isfile(save_file):
         print(f"{save_file} exists already! not overwriting and skipped")
     else:
+        os.makedirs(save_dir, exist_ok=True)
         print(f"extracting segmented embeddings and saving to {save_file}")
         extracted_features = generating_features(data, model, aligned_path)
 

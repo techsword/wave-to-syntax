@@ -88,7 +88,7 @@ def make_bow_model(save_path = 'bow_model.pt',
 
 
 def main(spokencoco_root='~/SpokenCOCO/', spokencoco_split='val',
-         librispeech_root='~/work_dir/librispeech-train/', libri_split='train-clean-100'):
+         librispeech_root='~/LibriSpeech/', libri_split='train-clean-100'):
     # Dataset roots are machine-local and exposed as CLI options (see README
     # "Datasets").
 
@@ -120,12 +120,14 @@ def main(spokencoco_root='~/SpokenCOCO/', spokencoco_split='val',
         print(f"{librispeech_csv} exists already! not overwriting")
 
 
-    csvs = {'scc':'spokencoco_val.csv', 'libri':'librispeech_train-clean-100.csv'}
+    # Use the split-derived csv names from above so that non-default
+    # --spokencoco_split / --libri_split values are read and written correctly.
+    csvs = {'scc': spokencoco_csv, 'libri': librispeech_csv}
     for x in csvs:
         print(f"saving {x} as a dataset in csv format")
         dataset_root_dir = os.path.join(librispeech_root, libri_split) if x == 'libri' else spokencoco_root
         make_dataset_csv(csv_file=csvs[x], dataset_root_dir=dataset_root_dir, rewrite=False)
-    make_bow_model()
+    make_bow_model(dataset_csvs=['dataset_' + csv for csv in csvs.values()])
 
 
 if __name__ == "__main__":
@@ -136,7 +138,7 @@ if __name__ == "__main__":
                         help='Root of the extracted SpokenCOCO dataset.')
     parser.add_argument('--spokencoco_split', default='val',
                         help='SpokenCOCO split to use (default: val).')
-    parser.add_argument('--librispeech_root', default='~/work_dir/librispeech-train/',
+    parser.add_argument('--librispeech_root', default='~/LibriSpeech/',
                         help='Root that contains the LibriSpeech split directory.')
     parser.add_argument('--libri_split', default='train-clean-100',
                         help='LibriSpeech split to use (default: train-clean-100).')
