@@ -16,7 +16,7 @@ from torch.utils.data import DataLoader, Dataset
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 # from utils.custom_classes import Corpus
-from utils.custom_functions import loading_fairseq_model
+from utils.custom_functions import loading_pretrained_model
 
 
 def segment_audio_emb(emb, segment_df, audio_len):
@@ -132,7 +132,7 @@ class ObservationIterator(Dataset):
         """
         self.labels = []
         for observation in tqdm(observations, desc='[computing labels]'):
-        self.labels.append(task.labels(observation))
+            self.labels.append(task.labels(observation))
 
     def __len__(self):
         return len(self.observations)
@@ -189,42 +189,66 @@ def collate_fn(batch):
     return seq_batched, lengths, annot, audio_name, alignment_file
 
 
-def main(model, dataset):
-    segmented_embedding_path = '/home/gshen/work_dir/spoken-model-syntax-probe/segmented_embeddings'
-    if dataset == 'scc':
-        # scc_save_file = os.path.join(segmented_embedding_path, os.path.basename(model_path)[:-3]+'_spokencoco.pt')
-        # if os.path.isfile(scc_save_file):
-        #     print(f'{scc_save_file} exists already! skipping')
-        # elif not os.path.isfile(scc_save_file):
-        #     scc = Corpus('spokencoco_val.csv', '/home/gshen/SpokenCOCO/')
-        #     torch.save(generating_features(scc, model, '/home/gshen/SpokenCOCO/aligned_val/'), scc_save_file)
-        save_file = os.path.join(segmented_embedding_path, os.path.basename(model_path)[:-3]+'_spokencoco.pt')
-        aligned_path = '/home/gshen/SpokenCOCO/aligned_val/'
-        data = WordSegmentedCorpus('spokencoco_val.csv', '/home/gshen/SpokenCOCO/', '/home/gshen/SpokenCOCO/aligned_val/')
+def model_tag_from_path(model_path):
+    '''Short model tag used in output file names. Strips a trailing .pt from
+    local checkpoint paths; for Hugging Face ids uses the repo name.'''
+    tag = os.path.basename(str(model_path).rstrip('/'))
+    return tag[:-3] if tag.endswith('.pt') else tag
 
+
+def main(model, dataset, model_path, save_dir='segmented_embeddings', csv_file=None, root_dir=None, aligned_path=None):
+    # Dataset roots and aligned dirs are machine-local and must be provided
+    # (see README "Datasets"). csv_file defaults to the file generated into the
+    # repo root by preprocessing.py; save_dir is relative to the repo.
+    tag = model_tag_from_path(model_path)
+    if dataset == 'scc':
+        csv_file = csv_file or 'spokencoco_val.csv'
+        save_file = os.path.join(save_dir, tag + '_spokencoco.pt')
     elif dataset == 'libri':
-        save_file = os.path.join(segmented_embedding_path, os.path.basename(model_path)[:-3]+'_librispeech.pt')
-        aligned_path = '/home/gshen/work_dir/librispeech-train/aligned_train'
-        data = WordSegmentedCorpus('librispeech_train-clean-100.csv', '/home/gshen/work_dir/librispeech-train/train-clean-100' , '/home/gshen/work_dir/librispeech-train/aligned_train/')
+        csv_file = csv_file or 'librispeech_train-clean-100.csv'
+        save_file = os.path.join(save_dir, tag + '_librispeech.pt')
+    else:
+        raise KeyError(f'dataset {dataset!r} is not supported')
+
+    if root_dir is None or aligned_path is None:
+        raise ValueError(
+            'root_dir and aligned_path must be provided: they point to the audio '
+            'files and their word-aligned TextGrid-derived csvs. Both are '
+            'machine-local and no longer hardcoded; pass --root and --aligned_path '
+            '(see README "Datasets").')
+
+    data = WordSegmentedCorpus(csv_file, root_dir, aligned_path)
     if os.path.isfile(save_file):
         print(f"{save_file} exists already! not overwriting and skipped")
     else:
         print(f"extracting segmented embeddings and saving to {save_file}")
         extracted_features = generating_features(data, model, aligned_path)
-        
+
         torch.save(extracted_features, save_file)
-        # libri_save_file = os.path.join(segmented_embedding_path, os.path.basename(model_path)[:-3] + 'librispeech.pt')
-        # if os.path.isfile(libri_save_file):
-        #     print(f"{scc_save_file} exists already! skipping")
-        # elif not os.path.isfile(libri_save_file):
-        #     libri = Corpus('librispeech_train-clean-100.csv', '/home/gshen/work_dir/librispeech-train/train-clean-100')
-        #     torch.save(generating_features(libri, model, '/home/gshen/work_dir/librispeech-train/aligned_train'), os.path.join(segmented_embedding_path, os.path.basename(model_path)[:-3]+'_librispeech_train_full.pt'))
 
 if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser(
+        description='Extract word-segmented embeddings from a wav2vec 2.0 model '
+                    'loaded with transformers.')
+    parser.add_argument('--model_path', default=None,
+                        help='Hugging Face model id (e.g. facebook/wav2vec2-base) '
+                             'or a local HF checkpoint directory. Required.')
+    parser.add_argument('--dataset', choices=['scc', 'libri'], default='scc',
+                        help='Which corpus to extract from (scc=SpokenCOCO, libri=LibriSpeech).')
+    parser.add_argument('--csv', default=None,
+                        help='Dataset csv (defaults to spokencoco_val.csv or '
+                             'librispeech_train-clean-100.csv, generated by preprocessing.py).')
+    parser.add_argument('--root', default=None,
+                        help='Root directory of the audio files. Required.')
+    parser.add_argument('--aligned_path', default=None,
+                        help='Directory of word-aligned csvs (from forced_alignment.py). Required.')
+    parser.add_argument('--save_dir', default='segmented_embeddings',
+                        help='Directory to save the extracted .pt files.')
+    cli = parser.parse_args()
 
-    model_path = '/home/gshen/work_dir/wav2vec_small.pt'
+    if cli.model_path is None:
+        parser.error('--model_path is required (HF model id or local HF checkpoint).')
 
-    model = loading_fairseq_model(model_path).to(device)
-
-    main(model, 'scc')
-    # main(model, 'libri')
+    model = loading_pretrained_model(cli.model_path).to(device)
+    main(model, cli.dataset, cli.model_path, cli.save_dir, cli.csv, cli.root, cli.aligned_path)

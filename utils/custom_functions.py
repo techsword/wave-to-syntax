@@ -18,19 +18,18 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 sr = 16000
 
 
-def loading_fairseq_model(model_file):
-    import fairseq
+def loading_pretrained_model(model_id_or_path):
+    '''Load a wav2vec 2.0 model with transformers and convert it to the
+    torchaudio Wav2Vec2Model API (extract_features) used by the extraction code.
 
-    from torchaudio.models.wav2vec2.utils import import_fairseq_model
-    model, _, _ = fairseq.checkpoint_utils.load_model_ensemble_and_task([model_file])
-    original = model[0]
-    imported = import_fairseq_model(original)
-    return imported
-
-def loading_huggingface_model(hf_model):
+    model_id_or_path: a Hugging Face Hub model id (e.g. facebook/wav2vec2-base)
+    or the path to a local Hugging Face checkpoint directory.
+    '''
     from torchaudio.models.wav2vec2.utils import import_huggingface_model
-    model = import_huggingface_model(hf_model)
-    return model
+    from transformers import Wav2Vec2Model
+
+    hf_model = Wav2Vec2Model.from_pretrained(model_id_or_path)
+    return import_huggingface_model(hf_model)
 
 def walk_librispeech_dirs(librispeech_root, libri_split):
     libri_split_path = os.path.join(librispeech_root,libri_split)
