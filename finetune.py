@@ -159,7 +159,7 @@ def main():
         compute_metrics=compute_metrics,
         train_dataset=ds["train"],
         eval_dataset=ds["test"],
-        tokenizer=processor.feature_extractor,
+        processing_class=processor.feature_extractor,
     )
 
     trainer.train()

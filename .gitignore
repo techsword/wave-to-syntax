@@ -1,2 +1,45 @@
-utils/__pycache__/custom_classes.cpython-39.pyc
-utils/__pycache__/custom_functions.cpython-39.pyc
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+.ipynb_checkpoints/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+.conda/
+
+# Build / packaging
+build/
+dist/
+
+# Datasets and generated artifacts
+data/
+datasets/
+embeddings/
+segmented_embeddings/
+pairwise_distances/
+tree_kernel/
+aligned/
+*.csv
+*.out
+
+# Model checkpoints and weights
+fast_vgs_family/
+*.pt
+*.pth
+*.bin
+*.safetensors
+
+# OS / editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
