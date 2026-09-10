@@ -1,0 +1,90 @@
+# Packaging metadata for the public code behind "Wave to Syntax: Probing spoken
+# language models for syntax" (Interspeech 2023, arXiv 2305.18957).
+#
+# The shared probe modules live in src/spoken_syntax_probe/ and are importable
+# as `spoken_syntax_probe`. Python 3.10-3.12 are supported.
+#
+# PyTorch is provided through the extras below. Select exactly one matching your
+# accelerator: `uv sync --python 3.10 --extra cpu` or `--extra cu121`. torch is
+# pinned exactly at 2.5.1: torch 2.6 changed the `torch.load` default to
+# `weights_only=True`, which breaks the full-object checkpoint loads of the
+# published artefacts.
+
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wave-to-syntax"
+version = "0.1.0"
+description = "Code for 'Wave to Syntax: Probing spoken language models for syntax' (Interspeech 2023)."
+readme = "README.md"
+requires-python = ">=3.10,<3.13"
+
+dependencies = [
+    "transformers==4.46.3",
+    "datasets==2.21.0",
+    "accelerate==1.1.1",
+    "numpy==1.26.4",
+    "scipy==1.13.1",
+    "pandas==2.2.3",
+    "scikit-learn==1.5.2",
+    "stanza==1.9.2",
+    "nltk==3.9.1",
+    "torchmetrics==1.4.2",
+    "torchsummary==1.5.1",
+    "joblib==1.4.2",
+    "tqdm==4.66.5",
+    "TextGrid==1.6.1",
+
+    # `ursa` is a git dependency, pinned to the commit used for the tree-kernel
+    # analysis.
+    "ursa @ git+https://github.com/gchrupala/ursa@3dca2f1e68f312623d9e57e41aa9f8810fb0910f",
+]
+
+# PyTorch is provided through the extras below. Select exactly one extra
+# matching your accelerator: `uv sync --extra cpu` or `uv sync --extra cu121`.
+[project.optional-dependencies]
+cpu = [
+    "torch==2.5.1",
+    "torchaudio==2.5.1",
+]
+cu121 = [
+    "torch==2.5.1",
+    "torchaudio==2.5.1",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["spoken_syntax_probe*"]
+
+[tool.uv]
+conflicts = [
+    [
+        { extra = "cpu" },
+        { extra = "cu121" },
+    ],
+]
+
+[tool.uv.sources]
+torch = [
+    { index = "pytorch-cpu", extra = "cpu" },
+    { index = "pytorch-cu121", extra = "cu121" },
+]
+torchaudio = [
+    { index = "pytorch-cpu", extra = "cpu" },
+    { index = "pytorch-cu121", extra = "cu121" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu121"
+url = "https://download.pytorch.org/whl/cu121"
+explicit = true
