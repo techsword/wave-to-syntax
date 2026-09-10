@@ -39,8 +39,6 @@ The previous `environment.yml` and `spec-file.txt` are removed.
 
 ## Repository layout
 
-> **DRAFT — maintainer review requested.** This section is new.
-
 The reusable probe code is packaged under `src/`:
 
 ```
@@ -181,7 +179,7 @@ python -m spoken_syntax_probe.extract_segmented_embeddings --model_path facebook
 (or `scripts/run_extract_segmented.sh` with the same options.)
 
 Options: `--model_path` (Hugging Face id or local Hugging Face checkpoint),
-`--model_tag` (DRAFT — output-file tag; defaults to the basename of
+`--model_tag` (output-file tag; defaults to the basename of
 `--model_path` with a trailing `.pt` stripped. Pass `wav2vec_small` or
 `checkpoint-10000` to reproduce the published file names),
 `--dataset` (`scc` or `libri`), `--csv`, `--root`, `--aligned_path`,
