@@ -110,7 +110,7 @@ def read_json_save_csv(json_path):
 
 
 def get_weird_sents(corpus_csv, root_dir):
-    from custom_classes import Corpus
+    from .custom_classes import Corpus
     corpus_ = Corpus(corpus_csv, root_dir)
     weird_sents = [x for x in [corpus_.get_depth(i) for i in range(len(corpus_))] if x[1] > len(str.split(x[0]))+2]
     print(f'there are total {len(weird_sents)} sentences')

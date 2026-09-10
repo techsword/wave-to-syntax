@@ -15,8 +15,8 @@ from torch.utils.data import DataLoader, Dataset
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-# from utils.custom_classes import Corpus
-from utils.custom_functions import loading_pretrained_model
+# from .utils.custom_classes import Corpus
+from .utils.custom_functions import loading_pretrained_model
 
 
 def segment_audio_emb(emb, segment_df, audio_len):
