@@ -1,37 +1,15 @@
+# Runtime dependencies for this repository live in pyproject.toml
+# ([project].dependencies, PEP 621). That file is the single source of truth.
+#
 # Environment for the code behind "Wave to Syntax: Probing spoken language
 # models for syntax" (Interspeech 2023, arXiv 2305.18957).
 #
-# Python 3.10 or 3.11.
-#   python -m venv .venv && source .venv/bin/activate
-#   pip install -r requirements.txt
+# Recommended (uv), select one accelerator extra:
+#   uv sync --python 3.10 --extra cpu
+#   uv sync --python 3.10 --extra cu121
 #
-# For a CPU-only install of torch/torchaudio, install those two wheels first
-# from the PyTorch CPU index and then run the command above:
+# pip: install the package into an active environment, then install
+# torch/torchaudio from the matching PyTorch index, for example:
+#   pip install -e .
 #   pip install torch==2.5.1 torchaudio==2.5.1 \
 #       --index-url https://download.pytorch.org/whl/cpu
-
-# --- deep learning / models ---
-torch==2.5.1
-torchaudio==2.5.1
-transformers==4.46.3
-datasets==2.21.0
-# transformers.Trainer in finetune.py requires accelerate>=0.26.0.
-accelerate==1.1.1
-
-# --- scientific stack ---
-numpy==1.26.4
-scipy==1.13.1
-pandas==2.2.3
-scikit-learn==1.5.2
-
-# --- probing / analysis ---
-stanza==1.9.2
-nltk==3.9.1
-torchmetrics==1.4.2
-torchsummary==1.5.1
-joblib==1.4.2
-tqdm==4.66.5
-TextGrid==1.6.1
-
-# Tree-kernel and RSA analysis. Pinned to a commit for reproducibility.
-ursa @ git+https://github.com/gchrupala/ursa@3dca2f1e68f312623d9e57e41aa9f8810fb0910f

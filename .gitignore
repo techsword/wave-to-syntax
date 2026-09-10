@@ -24,11 +24,17 @@ data/
 datasets/
 embeddings/
 segmented_embeddings/
+regress-data/
 pairwise_distances/
 tree_kernel/
 aligned/
 *.csv
 *.out
+
+# Fine-tuning outputs and inputs (generated locally, not shipped)
+combined_libri_scc_DS/
+finetuned-wav2vec-base/
+vocab.json
 
 # Model checkpoints and weights
 fast_vgs_family/

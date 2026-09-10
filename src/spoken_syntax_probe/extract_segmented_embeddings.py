@@ -15,8 +15,8 @@ from torch.utils.data import DataLoader, Dataset
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-# from utils.custom_classes import Corpus
-from utils.custom_functions import loading_pretrained_model
+# from .utils.custom_classes import Corpus
+from .utils.custom_functions import loading_pretrained_model
 
 
 def segment_audio_emb(emb, segment_df, audio_len):
@@ -196,11 +196,11 @@ def model_tag_from_path(model_path):
     return tag[:-3] if tag.endswith('.pt') else tag
 
 
-def main(model, dataset, model_path, save_dir='segmented_embeddings', csv_file=None, root_dir=None, aligned_path=None):
+def main(model, dataset, model_path, save_dir='segmented_embeddings', csv_file=None, root_dir=None, aligned_path=None, model_tag=None):
     # Dataset roots and aligned dirs are machine-local and must be provided
     # (see README "Datasets"). csv_file defaults to the file generated into the
     # repo root by preprocessing.py; save_dir is relative to the repo.
-    tag = model_tag_from_path(model_path)
+    tag = model_tag or model_tag_from_path(model_path)
     if dataset == 'scc':
         csv_file = csv_file or 'spokencoco_val.csv'
         save_file = os.path.join(save_dir, tag + '_spokencoco.pt')
@@ -235,6 +235,12 @@ if __name__ == '__main__':
     parser.add_argument('--model_path', default=None,
                         help='Hugging Face model id (e.g. facebook/wav2vec2-base) '
                              'or a local HF checkpoint directory. Required.')
+    parser.add_argument('--model_tag', default=None,
+                        help='Output-file tag; defaults to the basename of '
+                             '--model_path with a trailing .pt stripped. Pass '
+                             'e.g. wav2vec_small (or checkpoint-10000) to '
+                             'reproduce the published segmented-embedding file '
+                             'names.')
     parser.add_argument('--dataset', choices=['scc', 'libri'], default='scc',
                         help='Which corpus to extract from (scc=SpokenCOCO, libri=LibriSpeech).')
     parser.add_argument('--csv', default=None,
@@ -252,4 +258,4 @@ if __name__ == '__main__':
         parser.error('--model_path is required (HF model id or local HF checkpoint).')
 
     model = loading_pretrained_model(cli.model_path).to(device)
-    main(model, cli.dataset, cli.model_path, cli.save_dir, cli.csv, cli.root, cli.aligned_path)
+    main(model, cli.dataset, cli.model_path, cli.save_dir, cli.csv, cli.root, cli.aligned_path, cli.model_tag)

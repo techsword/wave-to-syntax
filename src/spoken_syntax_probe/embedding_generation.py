@@ -15,7 +15,7 @@ from transformers import (AutoModel, AutoTokenizer, Wav2Vec2Config,
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-from utils.custom_classes import Corpus, textCorpus
+from .utils.custom_classes import Corpus, textCorpus
 
 
 def load_fast_vgs_model(model_path):
