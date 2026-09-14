@@ -24,6 +24,7 @@ requires-python = ">=3.10,<3.13"
 dependencies = [
     "transformers==4.46.3",
     "datasets==2.21.0",
+    "evaluate",
     "accelerate==1.1.1",
     "numpy==1.26.4",
     "scipy==1.13.1",
@@ -52,6 +53,12 @@ cpu = [
 cu121 = [
     "torch==2.5.1",
     "torchaudio==2.5.1",
+]
+
+# Development/test-only dependency; the default install does not need it.
+[dependency-groups]
+dev = [
+    "pytest>=8",
 ]
 
 [tool.setuptools]

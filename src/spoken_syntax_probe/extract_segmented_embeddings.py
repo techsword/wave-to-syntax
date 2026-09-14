@@ -59,10 +59,13 @@ def generating_features(dataset, model, aligned_path, layer = 12, sr = 16000):
 
         with torch.inference_mode():
             features, _ = model.to(device).extract_features(waveform.to(device), num_layers = layer)
+            # Restore word segmentation before stacking. The published
+            # segmented artifacts store one mean embedding per aligned word,
+            # not raw frame-level stacks.
+            features = [segment_audio_emb(x, segment_df, audio_len) for x in features]
             features = torch.stack(features).detach().cpu().numpy()
 
             # return features[0], segment_df, audio_len
-            # features = [segment_audio_emb(x, segment_df, audio_len) for x in features]
             # features = features[-1]
             # features = [torch.mean(x.cpu(),dim=1).squeeze().numpy() for x in features]
             # feat_list.append(torch.mean(features,dim=1).squeeze().numpy())
@@ -225,7 +228,12 @@ def main(model, dataset, model_path, save_dir='segmented_embeddings', csv_file=N
         print(f"extracting segmented embeddings and saving to {save_file}")
         extracted_features = generating_features(data, model, aligned_path)
 
-        torch.save(extracted_features, save_file)
+        # Protocol 5 legacy serialization keeps the format load-identical but
+        # avoids the ~5.5x peak-memory overhead (and >4 GiB OverflowError) of
+        # pickle protocol 2 on many-small-array artefacts. Validated on the
+        # workstation replication.
+        torch.save(extracted_features, save_file,
+                   pickle_protocol=5, _use_new_zipfile_serialization=False)
 
 if __name__ == '__main__':
     import argparse
