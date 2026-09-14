@@ -39,6 +39,18 @@ def load_embs(embedding_file, ceil,ref_sent_idx, test_sent_idx):
 
     return modelname, datasetname, ref_embs, test_embs
     
+def kernel_dataset_name(tree_kernel_file):
+    """Map a tree-kernel filename to its corpus name.
+
+    Kernel files are named like
+    ``spokencoco_val_42_200anchors_regress_kernel.pt`` or
+    ``librispeech_train_42_200anchors_regress_kernel.pt``. Both the legacy
+    ``scc`` token and the ``spokencoco`` token select SpokenCOCO.
+    """
+    datasetname = '_'.join(os.path.basename(tree_kernel_file).split("_")[:2])
+    return 'spokencoco' if ('scc' in datasetname or 'spokencoco' in datasetname) else 'librispeech'
+
+
 def run_probe():
     tk_data_path = 'regress-data/'
     tree_kernel_paths = [os.path.join(tk_data_path,x) for x in os.listdir(tk_data_path) if 'anchors_regress_kernel' in x]
@@ -49,7 +61,7 @@ def run_probe():
     tqdm.write(f'looking at {embedding_files}')
     for tree_kernel_file in tqdm(tree_kernel_paths):
         tk, ref_sent_idx, test_sent_idx, ceil = load_tree_kernel(tree_kernel_file)
-        datasetname = '_'.join(os.path.basename(tree_kernel_file).split("_")[:2])
+        datasetname = kernel_dataset_name(tree_kernel_file)
         for embedding_file in tqdm([x for x in embedding_files if datasetname in x]):
             modelname, datasetname, ref_embs, test_embs = load_embs(embedding_file, ceil, ref_sent_idx, test_sent_idx)
             if modelname == 'BOW':

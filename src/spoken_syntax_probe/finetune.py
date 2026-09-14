@@ -1,6 +1,7 @@
 import pandas as pd
 import os
-from datasets import Dataset, load_dataset, Audio, DatasetDict, load_from_disk,  load_metric
+from datasets import load_from_disk
+import evaluate
 import numpy as np
 import re
 from transformers import Wav2Vec2CTCTokenizer, Wav2Vec2Processor, Wav2Vec2FeatureExtractor, Wav2Vec2ForCTC
@@ -97,7 +98,7 @@ def prepare_dataset(batch):
     return batch
 
 
-wer_metric = load_metric("wer")
+wer_metric = evaluate.load("wer")
 
 
 def compute_metrics(pred):
@@ -140,7 +141,7 @@ def main():
         output_dir='finetuned-wav2vec-base',
         group_by_length=True,
         per_device_train_batch_size=16,
-        evaluation_strategy="steps",
+        eval_strategy="steps",
         num_train_epochs=30,
         fp16=True,
         gradient_checkpointing=True, 
