@@ -28,7 +28,6 @@ def make_dataset_csv(csv_file, dataset_root_dir, batch_size = 400, rewrite = Fal
     dataset_root_dir = os.path.expanduser(dataset_root_dir)
     save_file = "dataset_"+csv_file
     dataset_ID = csv_file.split(".")[0].split("-")[0]
-    dataset_split = csv_file.split(".")[0].split('_')[-1]
     tree_save_file = dataset_ID+"_generated_trees.pt"
     if os.path.isfile(tree_save_file) and os.path.isfile(save_file) and not rewrite:
         print(f"{save_file} exists already! skipping generation")

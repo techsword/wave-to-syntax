@@ -444,7 +444,6 @@ def interactive_run_this(result_dir='structural-probe-results/varying_mtl'):
     mode = 'twd'
     import os
     import pandas as pd
-    import plotnine as p9
     mode_filter = '_'+mode
     all_out = [x for x in os.listdir(result_dir) if os.path.isfile(os.path.join(result_dir,x)) and mode_filter in x]
     mean_out = [x for x in all_out if 'mean' in x]
@@ -474,16 +473,6 @@ def interactive_run_this(result_dir='structural-probe-results/varying_mtl'):
     df = df.reset_index(drop=True)
     mode_dict = {'twd': 'Word Distance Task',
                 'wd': 'Word Depth Task'}
-
-    figure = (p9.ggplot(df,p9.aes('norm_layer', 'spearmanr', color='model', shape = 'dataset'))
-        + p9.geom_point()
-        # + p9.scale_color_manual(colors)
-        + p9.geom_line()
-        + p9.theme_linedraw()
-        + p9.facet_wrap('~ model')
-        + p9.labels.ggtitle(mode_dict[mode])
-        + p9.theme(axis_text_x = p9.element_blank(),dpi=300)
-        )
 
 
 if __name__ == '__main__':

@@ -47,14 +47,9 @@ def do_scc_prep(spokencoco_csv='spokencoco_val.csv', spokencoco_path=None):
     df_scc['path'] = df_scc['path'].apply(lambda x: os.path.join(spokencoco_path,x))
     df_scc['txtfilename'] = df_scc.path.apply(lambda x: x[:-4])+'.txt'
     list_of_scc_files = list(zip(df_scc['txtfilename'], df_scc['transcription']))
-    list_of_scc_files[0]
     for audioseg in list_of_scc_files:
         i, j = audioseg
         write_scc_individual_txt(i,j)
-
-def main_prep():
-    do_libri_prep()
-    do_scc_prep()
 
 
 def convert_tg_to_csv(tg_file):

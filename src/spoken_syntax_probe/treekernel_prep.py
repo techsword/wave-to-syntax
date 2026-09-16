@@ -57,7 +57,6 @@ def generate_kernel_regress(tree_paths, seed = 42, alpha = 0.5, num_anchors = 20
     random.seed(seed)
     K = Kernel(alpha=alpha)
     for generated_tree in tree_paths:
-        tree_kernel = []
         datasetname = '_'.join(generated_tree.split('_')[:2])
         save_file = os.path.join(save_path, datasetname + '_' + str(seed)+'_'+str(num_anchors)+'anchors' "_regress_kernel.pt")
         if not os.path.exists(save_path):
@@ -68,7 +67,7 @@ def generate_kernel_regress(tree_paths, seed = 42, alpha = 0.5, num_anchors = 20
             tree_list = torch.load(generated_tree)
             word_upper_limit = 52 if 'libri' in generated_tree else 20
             trees_filtered = [x for x in tree_list if len(str.split(x[1])) < word_upper_limit]
-            trees_filtered = [[item, i] for i, item in enumerate(trees_filtered)][:]
+            trees_filtered = [[item, i] for i, item in enumerate(trees_filtered)]
             random.shuffle(trees_filtered)
 
             ref_pts = trees_filtered[:num_anchors]
