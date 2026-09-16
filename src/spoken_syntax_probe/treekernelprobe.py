@@ -1,6 +1,4 @@
-import json
 import os
-import random
 
 import numpy as np
 import torch
@@ -9,8 +7,6 @@ from tqdm.auto import tqdm
 from ursa.regress import Regress
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-import ursa.util as U
-from nltk.tree import Tree
 
 
 def load_tree_kernel(tree_kernel_file):
@@ -38,7 +34,7 @@ def load_embs(embedding_file, ceil,ref_sent_idx, test_sent_idx):
     test_embs = np.take(filtered_embs, test_sent_idx.astype(int), axis = 0)
 
     return modelname, datasetname, ref_embs, test_embs
-    
+
 def kernel_dataset_name(tree_kernel_file):
     """Map a tree-kernel filename to its corpus name.
 

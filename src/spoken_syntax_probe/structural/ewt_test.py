@@ -7,7 +7,7 @@ import pandas as pd
 import numpy as np
 import torch
 import ursa.util as U
-from sklearn.linear_model import Ridge, RidgeCV
+from sklearn.linear_model import Ridge
 from sklearn.metrics import make_scorer, mean_squared_error, r2_score
 from sklearn.model_selection import GridSearchCV
 from torchmetrics.functional import pairwise_cosine_similarity
@@ -15,12 +15,6 @@ from tqdm.auto import tqdm
 from ursa.kernel import Kernel
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-import ursa.util as U
-from nltk.tree import Tree
-
-import json
-import random
-import sys
 from nltk.tree import Tree
 
 def ewt_json_all():
@@ -37,7 +31,7 @@ def ewt_json_all():
         container_list = []
         for datum in data:
             try:
-                container_list.append(dict(sent=datum.metadata['text'], sentid=datum.metadata['sent_id'], tree=str(get_tree(datum.metadata)['sent_id']))) 
+                container_list.append(dict(sent=datum.metadata['text'], sentid=datum.metadata['sent_id'], tree=str(get_tree(datum.metadata)['sent_id'])))
             except:
                 continue
         return container_list
@@ -48,26 +42,13 @@ def ewt_json_all():
     ref = random.sample(test, 200)
     data_train = gen_dict_from_conllu(train)
 
-    
+
 
     data_train = [ dict(sent=datum.metadata['text'], sentid=datum.metadata['sent_id'], tree=str(get_tree(datum.metadata['sent_id']))) for datum in train[:10000] ]
-    data_ref  = [ dict(sent=datum.metadata['text'], sentid=datum.metadata['sent_id'], tree=str(get_tree(datum.metadata['sent_id']))) for datum in ref ]    
-    data_dev  = [ dict(sent=datum.metadata['text'], sentid=datum.metadata['sent_id'], tree=str(get_tree(datum.metadata['sent_id']))) for datum in dev ]    
+    data_ref  = [ dict(sent=datum.metadata['text'], sentid=datum.metadata['sent_id'], tree=str(get_tree(datum.metadata['sent_id']))) for datum in ref ]
     json.dump(dict(ref=data_ref, test=data_train), open("ewt_train_all.json","w"))
 
 
-
-# def id2path(sentid, prefix="ewt_data/"):
-#     cols = sentid.split('-')
-#     return (prefix + cols[0] + "/penntree/" + '-'.join(cols[1:-1]) + ".xml.tree", int(cols[-1])-1)
-# def get_tree(sentid):
-#     path, index = id2path(sentid)
-#     return [Tree.fromstring(line) for line in open(path) ][index]
-# test =  U.parse(open("UD_English-EWT/en_ewt-ud-dev.conllu").read())
-# train = U.parse(open("UD_English-EWT/en_ewt-ud-train.conllu").read())
-# dev = U.parse(open('UD_English-EWT/en_ewt-ud-test.conllu').read())
-# data_test = [ dict(sent=datum.metadata['text'], sentid=datum.metadata['sent_id'], tree=str(get_tree(datum.metadata['sent_id']))) for datum in test ]
-# data_ref  = [ dict(sent=datum.metadata['text'], sentid=datum.metadata['sent_id'], tree=str(get_tree(datum.metadata['sent_id']))) for datum in ref ]    
 
 def compute_kernel_(f, tree1, trees_filtered, normalize = True):
     tree1 = delex(tree1)
@@ -79,11 +60,11 @@ def compute_kernel_(f, tree1, trees_filtered, normalize = True):
         kernel_container.append(f(tree1, tree2)/denom)
     return np.array(kernel_container)
 def delex(n, leaf="X"):
-    if isinstance(n, str): 
-        return leaf 
-    else: 
+    if isinstance(n, str):
+        return leaf
+    else:
         return Tree(n.label(), [ delex(c) for c in n[:] ])
-    
+
 
 def generate_kernel_ewt(ref_pts, test_pts, alpha = 0.5, save_path = 'regress-data', save_name = "ewt_kernel.pt", normalization = True, parallel = False, rewrite = False):
     K = Kernel(alpha=alpha)
@@ -97,24 +78,18 @@ def generate_kernel_ewt(ref_pts, test_pts, alpha = 0.5, save_path = 'regress-dat
             tree_kernel_container = Parallel(
                     n_jobs=-1, backend='loky'
                     )(delayed(compute_kernel_)(K,i,ref_pts,normalization) for i in tqdm(test_pts))
-            
+
         elif parallel == False:
             # raise NotImplementedError('non-parallel kernel generation not implemented yet')
             tree_kernel_container = []
             for test_pt in tqdm(test_pts):
                 tree_kernel_container.append(compute_kernel_(K,test_pt, ref_pts, normalization))
-            
-        # return tree_kernel_container
-        torch.save(tree_kernel_container, save_file)
-    return tree_kernel_container
-    
 
-def compare_trees(ewt_entry):
-    sent = ewt_entry['sent']
-    og_tree = Tree.fromstring(ewt_entry['tree'])
-    stanza_tree = Tree.fromstring(str(nlp(sent).sentences[0].constituency))
-    print(sent)
-    return og_tree, stanza_tree
+        # return tree_kernel_container
+        torch.save(tree_kernel_container, save_file,
+                   pickle_protocol=5, _use_new_zipfile_serialization=False)
+    return tree_kernel_container
+
 
 def stanza_ewt_trees(sents):
     import stanza
@@ -139,11 +114,11 @@ def load_model(modelname):
     if modelname == 'bert':
         MODEL_ID = "bert-base-uncased"
         tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
-        model = AutoModel.from_pretrained(MODEL_ID).to(device) 
+        model = AutoModel.from_pretrained(MODEL_ID).to(device)
     elif modelname == 'bert-large':
         MODEL_ID = "bert-large-uncased"
         tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
-        model = AutoModel.from_pretrained(MODEL_ID).to(device) 
+        model = AutoModel.from_pretrained(MODEL_ID).to(device)
     return model, tokenizer, MODEL_ID.split("/")[-1]
 
 def sent_emb(sents, tokenizer, model, CLS = True):
@@ -156,11 +131,11 @@ def sent_emb(sents, tokenizer, model, CLS = True):
             features = outputs.hidden_states
             if CLS == True:
                 features = torch.stack(features).squeeze(1)[:,0].detach().cpu().numpy()
-            else:                
+            else:
                 features = torch.stack(features).squeeze(1).mean(1).detach().cpu().numpy()
             feat_list.append(features)
     return np.stack(feat_list)
-        
+
 def ewt_test(json_file = 'ewt.json',kernel_path = 'ewt_test_data/ewt_original_tk.pt', model_ID = 'bert-large'):
     f = open(json_file)
     ewt = json.load(f)
@@ -174,10 +149,11 @@ def ewt_test(json_file = 'ewt.json',kernel_path = 'ewt_test_data/ewt_original_tk
         embs = torch.load(embs_file)
     else:
         model, tokenizer, MODEL_ID = load_model(model_ID)
-        embs = {'ref':sent_emb(sent_ref,tokenizer, model), 
+        embs = {'ref':sent_emb(sent_ref,tokenizer, model),
             'test':sent_emb(sent_test,tokenizer, model)}
-        torch.save(embs, embs_file)
-    
+        torch.save(embs, embs_file,
+                   pickle_protocol=5, _use_new_zipfile_serialization=False)
+
     # emb_test = sent_emb(sent_test, tokenizer, model)
     # emb_ref = sent_emb(sent_ref, tokenizer, model)
     emb_ref = embs['ref']
@@ -206,8 +182,8 @@ def ewt_test(json_file = 'ewt.json',kernel_path = 'ewt_test_data/ewt_original_tk
         print(result|score)
 
 
-def pearson_r_score(Y_true, Y_pred): 
-     r =  U.pearson_r(Y_true, Y_pred, axis=0).mean() 
+def pearson_r_score(Y_true, Y_pred):
+     r =  U.pearson_r(Y_true, Y_pred, axis=0).mean()
      return r
 
 class Regress:
@@ -216,8 +192,8 @@ class Regress:
     metrics = dict(mse       = make_scorer(mean_squared_error, greater_is_better=False),
                    r_sq        = make_scorer(r2_score, greater_is_better=True),
                    pearson_r = make_scorer(pearson_r_score, greater_is_better=True))
-                   
-    
+
+
     def __init__(self, cv=10, alphas=default_alphas):
         self.cv = cv
         self.grid =  {'alpha': alphas }
@@ -227,7 +203,7 @@ class Regress:
         self._model.fit(X, Y)
         result = { name: {} for name in self.metrics.keys() }
         for name, scorer in self.metrics.items():
-            mean = self._model.cv_results_["mean_test_{}".format(name)] 
+            mean = self._model.cv_results_["mean_test_{}".format(name)]
             std  = self._model.cv_results_["std_test_{}".format(name)]
             best = mean.argmax()
             result[name]['mean'] = mean[best] * scorer._sign
@@ -245,13 +221,13 @@ class Regress:
 
 def plot(plotting_df, title = 'TreeKernel Task Results'):
     import plotnine as p9
-    
+
     figure = (p9.ggplot(plotting_df,p9.aes('norm_layer', 'pearson_r_mean', color = 'dataset'))
-        + p9.geom_point() 
+        + p9.geom_point()
         # + p9.scale_color_manual(colors)
         + p9.geom_line()
         + p9.theme_linedraw()
-        + p9.theme(figure_size=(6, 5), dpi=300) 
+        + p9.theme(figure_size=(6, 5), dpi=300)
         # + p9.ylim(0.4,0.7)
         + p9.xlab("Transformer Layer from shallow to deep")
         + p9.ylab("Pearson's r")
@@ -260,7 +236,7 @@ def plot(plotting_df, title = 'TreeKernel Task Results'):
         + p9.theme(axis_text_x = p9.element_blank())
         )
     return figure
-def read_out_file(outfile, columns, 
+def read_out_file(outfile, columns,
                   remove_list = ['modelname', 'datasetname','mse', 'mean','std','alpha','pearson_r','r_sq','layer', 'r2score', 'feature', 'model_', 'kernel']):
     df = pd.read_csv(outfile, names = columns)
     for column in columns:
@@ -286,8 +262,8 @@ def read_out_file(outfile, columns,
     return df
 
 if __name__ == "__main__":
-    ewt_test(kernel_path='regress-data/ewt_stanza_kernel.pt')    
-    # ewt_test(model_ID='bert')    
+    ewt_test(kernel_path='regress-data/ewt_stanza_kernel.pt')
+    # ewt_test(model_ID='bert')
 
     tk_columns = ['model',
                     'dataset',

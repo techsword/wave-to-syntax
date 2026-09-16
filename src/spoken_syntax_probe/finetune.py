@@ -1,5 +1,3 @@
-import pandas as pd
-import os
 from datasets import load_from_disk
 import evaluate
 import numpy as np
@@ -9,8 +7,8 @@ from transformers import TrainingArguments, Trainer
 
 import torch
 
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Union
+from dataclasses import dataclass
+from typing import Dict, List, Optional, Union
 
 tokenizer = Wav2Vec2CTCTokenizer("./vocab.json", unk_token="[UNK]", pad_token="[PAD]", word_delimiter_token="|")
 feature_extractor = Wav2Vec2FeatureExtractor(feature_size=1, sampling_rate=16000, padding_value=0.0, do_normalize=True, return_attention_mask=False)
@@ -92,7 +90,7 @@ def prepare_dataset(batch):
 
     # batched output is "un-batched" to ensure mapping is correct
     batch["input_values"] = processor(audio["array"], sampling_rate=audio["sampling_rate"]).input_values[0]
-    
+
     with processor.as_target_processor():
         batch["labels"] = processor(batch["text"]).input_ids
     return batch
@@ -128,10 +126,10 @@ def main():
     ds = ds.map(prepare_dataset, remove_columns=ds.column_names["train"], num_proc=16)
 
     data_collator = DataCollatorCTCWithPadding(processor=processor, padding=True)
-    
+
     model = Wav2Vec2ForCTC.from_pretrained(
-        "facebook/wav2vec2-base", 
-        ctc_loss_reduction="mean", 
+        "facebook/wav2vec2-base",
+        ctc_loss_reduction="mean",
         pad_token_id=processor.tokenizer.pad_token_id,
     )
     model.freeze_feature_extractor()
@@ -144,7 +142,7 @@ def main():
         eval_strategy="steps",
         num_train_epochs=30,
         fp16=True,
-        gradient_checkpointing=True, 
+        gradient_checkpointing=True,
         save_steps=500,
         eval_steps=500,
         logging_steps=500,

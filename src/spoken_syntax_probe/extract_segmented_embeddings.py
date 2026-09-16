@@ -1,16 +1,11 @@
-import gc
 import math
 import os
-import random
 
-import numpy as np
 import pandas as pd
-import textgrid
 import torch
 from tqdm import tqdm
-import pandas as pd
 import torchaudio
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import Dataset
 
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -19,15 +14,20 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 from .utils.custom_functions import loading_pretrained_model
 
 
-def segment_audio_emb(emb, segment_df, audio_len):
+def segment_audio_emb(emb, segment_df, audio_len, hidden_size=None):
     total_frames = emb.shape[1]
     segment_df['startFrame'] = (segment_df['startTime']/audio_len*total_frames).map(math.ceil)
     segment_df['endFrame'] = (segment_df['endTime']/audio_len*total_frames).map(math.ceil)
     segment_df = segment_df[~segment_df['transcription'].str.contains('sil', na = False)]
     segment_dict = segment_df.iloc[:,3:].to_dict()
-    segments = torch.zeros(len(segment_df), 768)
+    # Derive the hidden size from the layer tensor (or the model config passed
+    # in). The old hard-coded 768 produced wrong-shaped rows for *-large models
+    # (hidden size 1024) and crashed at assignment.
+    if hidden_size is None:
+        hidden_size = emb.shape[-1]
+    segments = torch.zeros(len(segment_df), hidden_size)
     for i, x in enumerate(segment_dict['transcription']):
-        # segment_tensor = 
+        # segment_tensor =
         segment_start = segment_dict['startFrame'][x]
         segment_end = segment_dict['endFrame'][x]
         segment_tensor = torch.mean(emb[:,segment_start:segment_end,:].cpu().squeeze(),0,True)
@@ -50,7 +50,7 @@ def generating_features(dataset, model, aligned_path, layer = 12, sr = 16000):
     for waveform, annot, audio_file, csv_file in tqdm(dataset):
         if len(str.split(annot)) > len_ceil:
             continue
-            
+
         total_frames = waveform.shape[1]
         segment_df = pd.read_csv(csv_file)
         audio_len = total_frames/sr
@@ -62,7 +62,8 @@ def generating_features(dataset, model, aligned_path, layer = 12, sr = 16000):
             # Restore word segmentation before stacking. The published
             # segmented artifacts store one mean embedding per aligned word,
             # not raw frame-level stacks.
-            features = [segment_audio_emb(x, segment_df, audio_len) for x in features]
+            hidden_size = getattr(getattr(model, 'config', None), 'hidden_size', None)
+            features = [segment_audio_emb(x, segment_df, audio_len, hidden_size) for x in features]
             features = torch.stack(features).detach().cpu().numpy()
 
             # return features[0], segment_df, audio_len
@@ -116,80 +117,6 @@ class WordSegmentedCorpus(Dataset):
             audio = self.transform(audio)
 
         return audio, annot, audio_name, alignment_file
-
-
-class ObservationIterator(Dataset):
-    """ List Container for lists of Observations and labels for them.
-    Used as the iterator for a PyTorch dataloader.
-    """
-
-    def __init__(self, observations, task):
-        self.observations = observations
-        self.set_labels(observations, task)
-
-    def set_labels(self, observations, task):
-        """ Constructs aand stores label for each observation.
-        Args:
-        observations: A list of observations describing a dataset
-        task: a Task object which takes Observations and constructs labels.
-        """
-        self.labels = []
-        for observation in tqdm(observations, desc='[computing labels]'):
-            self.labels.append(task.labels(observation))
-
-    def __len__(self):
-        return len(self.observations)
-
-    def __getitem__(self, idx):
-        return self.observations[idx], self.labels[idx]
-
-class EmbsDataset():
-    def __init__(self):
-        pass
-    def custom_pad(self, batch):
-        '''Pads sequences with 0 and labels with -1; used as collate_fn of DataLoader.
-        
-        Loss functions will ignore -1 labels.
-        If labels are 1D, pads to the maximum sequence length.
-        If labels are 2D, pads all to (maxlen,maxlen).
-        Args:
-        batch_observations: A list of observations composing a batch
-        
-        Return:
-        A tuple of:
-            input batch, padded
-            label batch, padded
-            lengths-of-inputs batch, padded
-            Observation batch (not padded)
-        '''
-        seqs, annot, audio_name, alignment_file = zip(*batch)
-
-        lengths = torch.tensor([len(x) for x in seqs]).to(device)
-        seqs = pad_sequence(seqs, batch_first=True)
-        label_shape = batch[1].shape
-        maxlen = int(torch.max(lengths))
-        label_maxshape = [maxlen for x in label_shape]
-        labels = [-torch.ones(*label_maxshape).to(device) for x in seqs]
-        for index, x in enumerate(batch):
-            length = x[1].shape[0]
-            if len(label_shape) == 1:
-                labels[index][:length] = x[1]
-            elif len(label_shape) == 2:
-                labels[index][:length,:length] = x[1]
-            else:
-                raise ValueError("Labels must be either 1D or 2D right now; got either 0D or >3D")
-        labels = torch.stack(labels)
-        return seqs, labels, lengths, batch
-
-
-from torch.nn.utils.rnn import pad_sequence
-def collate_fn(batch):
-    seq, annot, audio_name, alignment_file = zip(*batch)
-
-    seq = [x.squeeze() for x in seq]
-    seq_batched = pad_sequence(seq, batch_first=True)
-    lengths = torch.tensor([len(x)/16000 for x in seq])
-    return seq_batched, lengths, annot, audio_name, alignment_file
 
 
 def model_tag_from_path(model_path):

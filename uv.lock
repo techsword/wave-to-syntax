@@ -848,6 +848,20 @@ wheels = [
 ]
 
 [[package]]
+name = "jiwer"
+version = "4.0.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "click" },
+    { name = "rapidfuzz", version = "3.14.5", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11' or (extra == 'extra-14-wave-to-syntax-cpu' and extra == 'extra-14-wave-to-syntax-cu121')" },
+    { name = "rapidfuzz", version = "3.14.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11' or (extra == 'extra-14-wave-to-syntax-cpu' and extra == 'extra-14-wave-to-syntax-cu121')" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/12/1e/963dfc249d5bbe88079b57a22556e981ddd9208e4b6116e48bdbfc01f26b/jiwer-4.0.0.tar.gz", hash = "sha256:ae9c051469102a61ef0927100baeeb4546f78d180c9b0948281d08eaf44c191e", size = 28074, upload-time = "2025-06-19T16:05:23.004Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/69/c9/172c525330c739a068c01050759a6f855ce16212db10a0359e690a03ac48/jiwer-4.0.0-py3-none-any.whl", hash = "sha256:7efaf0bd336b095d99ddef9dd67e1ee829d75d58aa2a81d9639870b01d6d95ea", size = 23034, upload-time = "2025-06-19T16:05:21.821Z" },
+]
+
+[[package]]
 name = "joblib"
 version = "1.4.2"
 source = { registry = "https://pypi.org/simple" }
@@ -1517,7 +1531,7 @@ name = "nvidia-cudnn-cu12"
 version = "9.1.0.70"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "nvidia-cublas-cu12", version = "12.1.3.1", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'extra-14-wave-to-syntax-cu121'" },
+    { name = "nvidia-cublas-cu12", version = "12.1.3.1", source = { registry = "https://pypi.org/simple" }, marker = "(sys_platform != 'emscripten' and extra == 'extra-14-wave-to-syntax-cu121') or (extra == 'extra-14-wave-to-syntax-cpu' and extra == 'extra-14-wave-to-syntax-cu121')" },
     { name = "nvidia-cublas-cu12", version = "12.4.5.8", source = { registry = "https://pypi.org/simple" }, marker = "(sys_platform != 'emscripten' and extra != 'extra-14-wave-to-syntax-cpu' and extra != 'extra-14-wave-to-syntax-cu121') or (extra == 'extra-14-wave-to-syntax-cpu' and extra == 'extra-14-wave-to-syntax-cu121')" },
 ]
 wheels = [
@@ -1596,9 +1610,9 @@ resolution-markers = [
     "python_full_version < '3.11' and sys_platform != 'emscripten'",
 ]
 dependencies = [
-    { name = "nvidia-cublas-cu12", version = "12.1.3.1", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'extra-14-wave-to-syntax-cu121'" },
-    { name = "nvidia-cusparse-cu12", version = "12.1.0.106", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'extra-14-wave-to-syntax-cu121'" },
-    { name = "nvidia-nvjitlink-cu12", version = "12.9.86", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'extra-14-wave-to-syntax-cu121'" },
+    { name = "nvidia-cublas-cu12", version = "12.1.3.1", source = { registry = "https://pypi.org/simple" }, marker = "(sys_platform != 'emscripten' and extra == 'extra-14-wave-to-syntax-cu121') or (extra == 'extra-14-wave-to-syntax-cpu' and extra == 'extra-14-wave-to-syntax-cu121')" },
+    { name = "nvidia-cusparse-cu12", version = "12.1.0.106", source = { registry = "https://pypi.org/simple" }, marker = "(sys_platform != 'emscripten' and extra == 'extra-14-wave-to-syntax-cu121') or (extra == 'extra-14-wave-to-syntax-cpu' and extra == 'extra-14-wave-to-syntax-cu121')" },
+    { name = "nvidia-nvjitlink-cu12", version = "12.9.86", source = { registry = "https://pypi.org/simple" }, marker = "(sys_platform != 'emscripten' and extra == 'extra-14-wave-to-syntax-cu121') or (extra == 'extra-14-wave-to-syntax-cpu' and extra == 'extra-14-wave-to-syntax-cu121')" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/bc/1d/8de1e5c67099015c834315e333911273a8c6aaba78923dd1d1e25fc5f217/nvidia_cusolver_cu12-11.4.5.107-py3-none-manylinux1_x86_64.whl", hash = "sha256:8a7ec542f0412294b15072fa7dab71d31334014a69f953004ea7a118206fe0dd", size = 124161928, upload-time = "2023-04-19T15:51:25.781Z" },
@@ -1635,7 +1649,7 @@ resolution-markers = [
     "python_full_version < '3.11' and sys_platform != 'emscripten'",
 ]
 dependencies = [
-    { name = "nvidia-nvjitlink-cu12", version = "12.9.86", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'extra-14-wave-to-syntax-cu121'" },
+    { name = "nvidia-nvjitlink-cu12", version = "12.9.86", source = { registry = "https://pypi.org/simple" }, marker = "(sys_platform != 'emscripten' and extra == 'extra-14-wave-to-syntax-cu121') or (extra == 'extra-14-wave-to-syntax-cpu' and extra == 'extra-14-wave-to-syntax-cu121')" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/65/5b/cfaeebf25cd9fdec14338ccb16f6b2c4c7fa9163aefcf057d86b9cc248bb/nvidia_cusparse_cu12-12.1.0.106-py3-none-manylinux1_x86_64.whl", hash = "sha256:f3b50f42cf363f86ab21f720998517a659a48131e8d538dc02f8768237bd884c", size = 195958278, upload-time = "2023-04-19T15:51:49.939Z" },
@@ -3188,7 +3202,7 @@ name = "triton"
 version = "3.1.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "filelock", marker = "(sys_platform != 'emscripten' and extra != 'extra-14-wave-to-syntax-cpu') or (sys_platform == 'emscripten' and extra == 'extra-14-wave-to-syntax-cu121') or (extra == 'extra-14-wave-to-syntax-cpu' and extra == 'extra-14-wave-to-syntax-cu121')" },
+    { name = "filelock", marker = "(sys_platform != 'emscripten' and extra != 'extra-14-wave-to-syntax-cpu') or (extra == 'extra-14-wave-to-syntax-cpu' and extra == 'extra-14-wave-to-syntax-cu121')" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/98/29/69aa56dc0b2eb2602b553881e34243475ea2afd9699be042316842788ff5/triton-3.1.0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:6b0dd10a925263abbe9fa37dcde67a5e9b2383fc269fdf59f5657cac38c5d1d8", size = 209460013, upload-time = "2024-10-14T16:05:32.106Z" },
@@ -3286,6 +3300,7 @@ dependencies = [
     { name = "datasets" },
     { name = "en-core-web-sm" },
     { name = "evaluate" },
+    { name = "jiwer" },
     { name = "joblib" },
     { name = "matplotlib", version = "3.10.9", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11' or (extra == 'extra-14-wave-to-syntax-cpu' and extra == 'extra-14-wave-to-syntax-cu121')" },
     { name = "matplotlib", version = "3.11.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11' or (extra == 'extra-14-wave-to-syntax-cpu' and extra == 'extra-14-wave-to-syntax-cu121')" },
@@ -3332,6 +3347,7 @@ requires-dist = [
     { name = "datasets", specifier = "==2.21.0" },
     { name = "en-core-web-sm", url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl" },
     { name = "evaluate" },
+    { name = "jiwer" },
     { name = "joblib", specifier = "==1.4.2" },
     { name = "matplotlib", specifier = ">=3.8" },
     { name = "networkx" },

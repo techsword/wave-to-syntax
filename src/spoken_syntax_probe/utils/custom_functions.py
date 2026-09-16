@@ -70,9 +70,9 @@ def walk_librispeech_dirs(librispeech_root, libri_split):
     merge_df = pd.merge(df,df_txt, on = 'fileid')
     merge_df = merge_df.drop(columns=['fileid'])
     return merge_df
-    
+
 def make_bow(doc):
-    
+
     doc = list(map(str.lower, doc))
     unique_words = set(' '.join(doc).split())
     print(f'there are {len(unique_words)} unique words')

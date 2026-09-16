@@ -1,16 +1,15 @@
 import os
 import re
 
-import numpy as np
 import pandas as pd
 import stanza
 import torch
 from nltk import Tree
 from sklearn.feature_extraction.text import CountVectorizer
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 
-from .utils.custom_classes import textCorpus, textCorpus_no_depth
+from .utils.custom_classes import textCorpus_no_depth
 from .utils.custom_functions import read_json_save_csv, walk_librispeech_dirs
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -29,7 +28,6 @@ def make_dataset_csv(csv_file, dataset_root_dir, batch_size = 400, rewrite = Fal
     dataset_root_dir = os.path.expanduser(dataset_root_dir)
     save_file = "dataset_"+csv_file
     dataset_ID = csv_file.split(".")[0].split("-")[0]
-    dataset_split = csv_file.split(".")[0].split('_')[-1]
     tree_save_file = dataset_ID+"_generated_trees.pt"
     if os.path.isfile(tree_save_file) and os.path.isfile(save_file) and not rewrite:
         print(f"{save_file} exists already! skipping generation")
@@ -52,14 +50,17 @@ def make_dataset_csv(csv_file, dataset_root_dir, batch_size = 400, rewrite = Fal
                 tree = Tree.fromstring(str(doc.sentences[0].constituency))
                 annot = doc.text
                 list_of_trees.append((tree,annot))
-        torch.save(list_of_trees, tree_save_file)
+        # Protocol 5 legacy serialization: load-identical format, lower peak
+        # memory on many-small-array artefacts (see rsa.py).
+        torch.save(list_of_trees, tree_save_file,
+                   pickle_protocol=5, _use_new_zipfile_serialization=False)
 
         df = pd.DataFrame(data)
         df.to_csv(save_file, index =  False)
 
-def make_bow_model(save_path = 'bow_model.pt', 
-                   rewrite = False, 
-                   dataset_csvs = ['dataset_spokencoco_val.csv', 
+def make_bow_model(save_path = 'bow_model.pt',
+                   rewrite = False,
+                   dataset_csvs = ['dataset_spokencoco_val.csv',
                                    'dataset_librispeech_train-clean-100.csv']):
     '''
     save_path: path to save the bow model in
@@ -80,10 +81,11 @@ def make_bow_model(save_path = 'bow_model.pt',
         list_of_sents = list(map(remove_special_characters,list_of_sents))
         list_of_sents = [item.strip() for item in list_of_sents if item.replace(" ",'').isalpha()]
         unique_words = set(' '.join(list_of_sents).split())
-        print(f"there are {len(unique_words)} unique words for the bag of words model")        
+        print(f"there are {len(unique_words)} unique words for the bag of words model")
         cv = CountVectorizer(token_pattern=r"(?u)\b\w+\b")
         cv.fit(list_of_sents)
-        torch.save(cv, save_path)
+        torch.save(cv, save_path,
+                   pickle_protocol=5, _use_new_zipfile_serialization=False)
     return cv
 
 
@@ -92,7 +94,7 @@ def main(spokencoco_root='~/SpokenCOCO/', spokencoco_split='val',
     # Dataset roots are machine-local and exposed as CLI options (see README
     # "Datasets").
 
-    # spokencoco pre-preprocessing 
+    # spokencoco pre-preprocessing
     spokencoco_csv = 'spokencoco_'+spokencoco_split+'.csv'
 
     if os.path.isfile(spokencoco_csv) == False:
@@ -106,8 +108,8 @@ def main(spokencoco_root='~/SpokenCOCO/', spokencoco_split='val',
         spokencoco_df.to_csv(spokencoco_csv, header=None, index = None)
     else:
         print(f"{spokencoco_csv} exists already! not overwriting")
-    
-    # librispeech pre-preprocessing 
+
+    # librispeech pre-preprocessing
     librispeech_csv = 'librispeech_'+libri_split+'.csv'
 
     if os.path.isfile(librispeech_csv) == False:
