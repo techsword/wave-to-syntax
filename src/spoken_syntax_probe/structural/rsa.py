@@ -33,18 +33,28 @@ def pairwise_distance_calc(embedding_file,pd_save_path, rewrite = False, device 
 
     for layer in tqdm(range(filtered_embs.shape[1])):
         save_file = '_'.join([modelname, datasetname, str(layer)])+"_pd.pt"
-        if os.path.isfile(os.path.join(pd_save_path,save_file)) and not rewrite:
+        save_path = os.path.join(pd_save_path, save_file)
+        if os.path.isfile(save_path) and not rewrite:
             tqdm.write(f"{save_file} exists already! skipping to the next one!")
         else:
             tqdm.write(f'pulling embedding from layer {layer} and saving to {save_file}')
             layer_embeddings = torch.tensor(filtered_embs[:,layer,:])
             layer_similarity = pairwise_cosine_similarity(layer_embeddings.to(device)).detach().cpu().numpy()
+            # datasetname can embed a path separator: the embedding directory
+            # name may contain an underscore (for example `rsa_flat`), and the
+            # split on the first underscore then keeps the rest of the path.
+            # Create the parent directory so a fresh run directory does not
+            # raise FileNotFoundError. The filename and path convention do not
+            # change.
+            save_dir = os.path.dirname(save_path)
+            if save_dir:
+                os.makedirs(save_dir, exist_ok=True)
             # pairwise_distance_container.append(layer_similarity)
             # Protocol 5 legacy serialization keeps the format load-identical
             # but avoids the ~5.5x peak-memory overhead (and >4 GiB
             # OverflowError) of pickle protocol 2 on many-small-array
             # artefacts. Validated on the workstation replication.
-            torch.save(layer_similarity, os.path.join(pd_save_path, save_file),
+            torch.save(layer_similarity, save_path,
                        pickle_protocol=5, _use_new_zipfile_serialization=False)
         # pairwise_distance_container = np.stack(pairwise_distance_container)
         # return pairwise_distance_container
