@@ -98,7 +98,8 @@ def kernel_layer_pearson(kernel, distance_matrix, kernel_pairs):
     ``kernel_pairs`` an ``(P, 2)`` array of ``(test, ref)`` index pairs aligned
     with ``kernel``.
     """
-    layer_distance = np.array([distance_matrix[i, j] for i, j in kernel_pairs])
+    pairs = np.asarray(kernel_pairs, dtype=int)
+    layer_distance = np.asarray(distance_matrix)[pairs[:, 0], pairs[:, 1]]
     return pearson_r_score(kernel, layer_distance)
 
 def kernel_matches_run(kernel_path, seed, delexed, alpha):
