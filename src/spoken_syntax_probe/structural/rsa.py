@@ -5,8 +5,6 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 import gc
 import os
 
-import numpy as np
-import torch
 import ursa.util as U
 from scipy.spatial.distance import cosine
 from scipy.stats import pearsonr

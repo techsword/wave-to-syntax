@@ -9,7 +9,6 @@ from tqdm.auto import tqdm
 from ursa.kernel import Kernel, delex
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-import ursa.util as U
 from nltk.tree import Tree
 
 

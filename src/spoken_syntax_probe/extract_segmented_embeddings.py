@@ -8,7 +8,6 @@ import pandas as pd
 import textgrid
 import torch
 from tqdm import tqdm
-import pandas as pd
 import torchaudio
 from torch.utils.data import DataLoader, Dataset
 
