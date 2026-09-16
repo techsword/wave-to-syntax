@@ -89,7 +89,9 @@ class LoadFromDisk_(Dataset):
 
         audio_len = self.audio_len[idx]
         text_len = len(text.split(' '))
-        embedding = torch.stack([torch.tensor(x).clone().detach() for x in self.emb[idx]])
+        # torch.tensor already copies, so the old .clone().detach() was
+        # redundant and only added per-item allocation.
+        embedding = torch.stack([torch.tensor(x) for x in self.emb[idx]])
         # num_layers = len(self.emb[idx])
         # embedding = {}
         # for lay in range(num_layers):
@@ -115,13 +117,15 @@ def get_dep_distance_matrix(sent):
     M = torch.zeros((len(doc), len(doc)))
     N = torch.zeros((len(doc)))
     for i, d1 in enumerate(doc):
-        N[i] = nx.shortest_path_length(graph, source=d1.text.lower(), target = d1.sent.root.text.lower())
+        # One BFS per token builds the whole row. The published version called
+        # nx.shortest_path_length per (i, j) pair, which repeats that BFS.
+        lengths = nx.single_source_shortest_path_length(graph, source=str(d1).lower())
+        N[i] = lengths[d1.sent.root.text.lower()]
         #print("Completed row {}".format(i))
-        for j, d2 in enumerate(doc):
-            if  i > j: # No need to re-compute lower triangular
-                M[i, j] = M[j, i]
-            else:
-                M[i, j] = nx.shortest_path_length(graph, source = str(d1).lower(), target = str(d2).lower())
+        for j in range(i, len(doc)):
+            M[i, j] = lengths[str(doc[j]).lower()]
+        for j in range(i):
+            M[i, j] = M[j, i]  # Lower triangle mirrors the upper one.
     return M, N
 
 def gen_labels(seg_embs, save_file = 'structural_probe_spokencoco_labels.pt'):
@@ -129,8 +133,9 @@ def gen_labels(seg_embs, save_file = 'structural_probe_spokencoco_labels.pt'):
         container = torch.load(save_file)
     else:
         container = {}
-        for i,(_,sent,_,_) in enumerate(tqdm(seg_embs)):
-
+        # gen_labels only reads the annotation column, so iterate that directly
+        # instead of going through __getitem__ (which stacks the embeddings).
+        for i, sent in enumerate(tqdm(seg_embs.annot)):
             twd,wd = get_dep_distance_matrix(sent)
             container[i] = {'sent':sent, 'twd': twd, 'wd':wd}
         torch.save(container, save_file)
@@ -173,7 +178,9 @@ def train_until_convergence(probe, loss, train_dataset, dev_dataset, layer = 0, 
       train_dataset: a torch.DataLoader object for iterating through training data
       dev_dataset: a torch.DataLoader object for iterating through dev data
     """
-    torch.autograd.set_detect_anomaly(True)
+    # torch.autograd.set_detect_anomaly(True) was removed: it is a global flag
+    # that was never reset, so every layer's backward pass kept paying the
+    # anomaly-tracking overhead. Re-enable locally when debugging a NaN.
     optimizer = optim.Adam(probe.parameters(), lr=0.001,eps = 1e-4)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1,patience=0)
 

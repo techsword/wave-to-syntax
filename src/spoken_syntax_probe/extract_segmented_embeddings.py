@@ -14,13 +14,18 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 from .utils.custom_functions import loading_pretrained_model
 
 
-def segment_audio_emb(emb, segment_df, audio_len):
+def segment_audio_emb(emb, segment_df, audio_len, hidden_size=None):
     total_frames = emb.shape[1]
     segment_df['startFrame'] = (segment_df['startTime']/audio_len*total_frames).map(math.ceil)
     segment_df['endFrame'] = (segment_df['endTime']/audio_len*total_frames).map(math.ceil)
     segment_df = segment_df[~segment_df['transcription'].str.contains('sil', na = False)]
     segment_dict = segment_df.iloc[:,3:].to_dict()
-    segments = torch.zeros(len(segment_df), 768)
+    # Derive the hidden size from the layer tensor (or the model config passed
+    # in). The old hard-coded 768 produced wrong-shaped rows for *-large models
+    # (hidden size 1024) and crashed at assignment.
+    if hidden_size is None:
+        hidden_size = emb.shape[-1]
+    segments = torch.zeros(len(segment_df), hidden_size)
     for i, x in enumerate(segment_dict['transcription']):
         # segment_tensor =
         segment_start = segment_dict['startFrame'][x]
@@ -57,7 +62,8 @@ def generating_features(dataset, model, aligned_path, layer = 12, sr = 16000):
             # Restore word segmentation before stacking. The published
             # segmented artifacts store one mean embedding per aligned word,
             # not raw frame-level stacks.
-            features = [segment_audio_emb(x, segment_df, audio_len) for x in features]
+            hidden_size = getattr(getattr(model, 'config', None), 'hidden_size', None)
+            features = [segment_audio_emb(x, segment_df, audio_len, hidden_size) for x in features]
             features = torch.stack(features).detach().cpu().numpy()
 
             # return features[0], segment_df, audio_len

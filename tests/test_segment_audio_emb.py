@@ -57,6 +57,20 @@ def test_segment_audio_emb_averages_the_aligned_frames():
     assert torch.allclose(segments[1], expected_cat)
 
 
+def test_segment_audio_emb_supports_large_hidden_size():
+    # *-large checkpoints have hidden size 1024; the old hard-coded 768 gave
+    # rows of the wrong width and crashed on assignment.
+    hidden = 1024
+    emb = torch.randn(1, TOTAL_FRAMES, hidden,
+                      generator=torch.Generator().manual_seed(2))
+    segments = segment_audio_emb(emb, _segment_frame(), AUDIO_LEN)
+
+    assert segments.shape == (2, hidden)
+    explicit = segment_audio_emb(emb, _segment_frame(), AUDIO_LEN,
+                                 hidden_size=hidden)
+    assert torch.equal(segments, explicit)
+
+
 def test_reused_segment_frame_across_layers_stays_word_level():
     # generating_features reuses one segment_df across all layers.
     n_words = 2
