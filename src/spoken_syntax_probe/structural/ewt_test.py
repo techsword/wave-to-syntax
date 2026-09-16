@@ -46,22 +46,9 @@ def ewt_json_all():
 
     data_train = [ dict(sent=datum.metadata['text'], sentid=datum.metadata['sent_id'], tree=str(get_tree(datum.metadata['sent_id']))) for datum in train[:10000] ]
     data_ref  = [ dict(sent=datum.metadata['text'], sentid=datum.metadata['sent_id'], tree=str(get_tree(datum.metadata['sent_id']))) for datum in ref ]
-    data_dev  = [ dict(sent=datum.metadata['text'], sentid=datum.metadata['sent_id'], tree=str(get_tree(datum.metadata['sent_id']))) for datum in dev ]
     json.dump(dict(ref=data_ref, test=data_train), open("ewt_train_all.json","w"))
 
 
-
-# def id2path(sentid, prefix="ewt_data/"):
-#     cols = sentid.split('-')
-#     return (prefix + cols[0] + "/penntree/" + '-'.join(cols[1:-1]) + ".xml.tree", int(cols[-1])-1)
-# def get_tree(sentid):
-#     path, index = id2path(sentid)
-#     return [Tree.fromstring(line) for line in open(path) ][index]
-# test =  U.parse(open("UD_English-EWT/en_ewt-ud-dev.conllu").read())
-# train = U.parse(open("UD_English-EWT/en_ewt-ud-train.conllu").read())
-# dev = U.parse(open('UD_English-EWT/en_ewt-ud-test.conllu').read())
-# data_test = [ dict(sent=datum.metadata['text'], sentid=datum.metadata['sent_id'], tree=str(get_tree(datum.metadata['sent_id']))) for datum in test ]
-# data_ref  = [ dict(sent=datum.metadata['text'], sentid=datum.metadata['sent_id'], tree=str(get_tree(datum.metadata['sent_id']))) for datum in ref ]
 
 def compute_kernel_(f, tree1, trees_filtered, normalize = True):
     tree1 = delex(tree1)
@@ -102,13 +89,6 @@ def generate_kernel_ewt(ref_pts, test_pts, alpha = 0.5, save_path = 'regress-dat
         torch.save(tree_kernel_container, save_file)
     return tree_kernel_container
 
-
-def compare_trees(ewt_entry):
-    sent = ewt_entry['sent']
-    og_tree = Tree.fromstring(ewt_entry['tree'])
-    stanza_tree = Tree.fromstring(str(nlp(sent).sentences[0].constituency))
-    print(sent)
-    return og_tree, stanza_tree
 
 def stanza_ewt_trees(sents):
     import stanza
