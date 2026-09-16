@@ -90,7 +90,7 @@ def prepare_dataset(batch):
 
     # batched output is "un-batched" to ensure mapping is correct
     batch["input_values"] = processor(audio["array"], sampling_rate=audio["sampling_rate"]).input_values[0]
-    
+
     with processor.as_target_processor():
         batch["labels"] = processor(batch["text"]).input_ids
     return batch
@@ -126,10 +126,10 @@ def main():
     ds = ds.map(prepare_dataset, remove_columns=ds.column_names["train"], num_proc=16)
 
     data_collator = DataCollatorCTCWithPadding(processor=processor, padding=True)
-    
+
     model = Wav2Vec2ForCTC.from_pretrained(
-        "facebook/wav2vec2-base", 
-        ctc_loss_reduction="mean", 
+        "facebook/wav2vec2-base",
+        ctc_loss_reduction="mean",
         pad_token_id=processor.tokenizer.pad_token_id,
     )
     model.freeze_feature_extractor()
@@ -142,7 +142,7 @@ def main():
         eval_strategy="steps",
         num_train_epochs=30,
         fp16=True,
-        gradient_checkpointing=True, 
+        gradient_checkpointing=True,
         save_steps=500,
         eval_steps=500,
         logging_steps=500,

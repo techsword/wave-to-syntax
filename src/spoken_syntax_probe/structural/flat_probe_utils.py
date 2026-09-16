@@ -11,7 +11,7 @@ import random
 
 from tqdm import tqdm
 from scipy.stats import spearmanr
-import numpy as np 
+import numpy as np
 import json
 
 import matplotlib as mpl
@@ -207,7 +207,7 @@ class WordPairReporter(Reporter):
         label = label[:length,:length].cpu()
         spearmanrs = [spearmanr(pred, gold) for pred, gold in zip(prediction, label)]
         lengths_to_spearmanrs[length].extend([x.correlation for x in spearmanrs])
-    mean_spearman_for_each_length = {length: np.nanmean(lengths_to_spearmanrs[length]) 
+    mean_spearman_for_each_length = {length: np.nanmean(lengths_to_spearmanrs[length])
         for length in lengths_to_spearmanrs}
 
     with open(os.path.join(self.reporting_root, split_name + '.spearmanr'), 'w') as fout:
@@ -314,7 +314,7 @@ class WordPairReporter(Reporter):
     with open(os.path.join(self.reporting_root, split_name+'.tikz'), 'a') as fout:
       string = """\\begin{dependency}[hide label, edge unit distance=.5ex]
     \\begin{deptext}[column sep=0.05cm]
-    """ 
+    """
       string += "\\& ".join([x.replace('$', '\$').replace('&', '+') for x in words]) + " \\\\" + '\n'
       string += "\\end{deptext}" + '\n'
       for i_index, j_index in gold_edges:
@@ -368,7 +368,7 @@ class WordReporter(Reporter):
         label = label[:length].cpu()
         sent_spearmanr = spearmanr(prediction, label)
         lengths_to_spearmanrs[length].append(sent_spearmanr.correlation)
-    mean_spearman_for_each_length = {length: np.nanmean(lengths_to_spearmanrs[length]) 
+    mean_spearman_for_each_length = {length: np.nanmean(lengths_to_spearmanrs[length])
         for length in lengths_to_spearmanrs}
 
     with open(os.path.join(self.reporting_root, split_name + '.spearmanr'), 'w') as fout:

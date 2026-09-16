@@ -43,11 +43,11 @@ def model_fitting(X,y, model):
             'r2score': r2score,
             'mse': mse,
             'model_alpha':model_alpha
-        }   
+        }
 
 
 def run_baseline(embedding_files = ['embeddings/wav2vec2-base_librispeech_train_extracted.pt',
-                                    'embeddings/wav2vec2-base_spokencoco_val_extracted.pt'], 
+                                    'embeddings/wav2vec2-base_spokencoco_val_extracted.pt'],
                                     reg_model_name = 'ridge'):
     embedding_files = [x for x in embedding_files if 'wav2vec2-base' in x]
     reg_model = load_regression_model(reg_model_name)
@@ -72,8 +72,8 @@ def run_baseline(embedding_files = ['embeddings/wav2vec2-base_librispeech_train_
 
 
 def run_model(embedding_files = ['embeddings/wav2vec2-base_librispeech_train_extracted.pt',
-                                    'embeddings/wav2vec2-base_spokencoco_val_extracted.pt'], 
-              reg_model_name = 'ridge', 
+                                    'embeddings/wav2vec2-base_spokencoco_val_extracted.pt'],
+              reg_model_name = 'ridge',
               combi = False,
               with_bow = False,
               bow_embedding_files = None):
@@ -83,7 +83,7 @@ def run_model(embedding_files = ['embeddings/wav2vec2-base_librispeech_train_ext
         combi: if train reg model with combined features
         with_bow: if train reg model with features combined with BoW representations
     '''
-    
+
 
     reg_model = load_regression_model(reg_model_name)
     for embedding_file in tqdm(embedding_files):
@@ -93,7 +93,7 @@ def run_model(embedding_files = ['embeddings/wav2vec2-base_librispeech_train_ext
         embeddings, labels, _,_,wordcount,audiolen  = torch.load(embedding_file)
         embeddings = np.array(embeddings)
         labels = torch.tensor(labels).numpy()
-        
+
         if len(wordcount) == len(labels) and combi == True:
             wordcount = torch.tensor(wordcount).numpy()
             audiolen = torch.tensor(audiolen).numpy()
@@ -103,7 +103,7 @@ def run_model(embedding_files = ['embeddings/wav2vec2-base_librispeech_train_ext
         elif len(wordcount) != len(labels) and combi == True:
             tqdm.write(f'{embedding_file} does not have combination features! skipping to the next one')
             continue
-            
+
         num_layers = embeddings.shape[1]
         for layer in range(num_layers):
             layer_embs = embeddings[:,layer,:]
@@ -127,10 +127,10 @@ def run_model(embedding_files = ['embeddings/wav2vec2-base_librispeech_train_ext
                     }
                     print(meta|results)
 
-                
+
 def run_model_with_bow(embedding_files = ['embeddings/wav2vec2-base_librispeech_train_extracted.pt',
-                                    'embeddings/wav2vec2-base_spokencoco_val_extracted.pt'], 
-              reg_model_name = 'ridge', 
+                                    'embeddings/wav2vec2-base_spokencoco_val_extracted.pt'],
+              reg_model_name = 'ridge',
               bow_embedding_files = ['embeddings/BOW_librispeech_train_extracted.pt',
                                      'embeddings/BOW_spokencoco_val_extracted.pt']):
     '''
@@ -138,7 +138,7 @@ def run_model_with_bow(embedding_files = ['embeddings/wav2vec2-base_librispeech_
         reg_model_name: default to RidgeCV from sklearn
         bow_embedding_files = a list of BoW embedding files
     '''
-    
+
 
     reg_model = load_regression_model(reg_model_name)
     for embedding_file in tqdm(embedding_files):
@@ -148,8 +148,8 @@ def run_model_with_bow(embedding_files = ['embeddings/wav2vec2-base_librispeech_
         embeddings, labels, _,_,_,_  = torch.load(embedding_file)
         embeddings = np.array(embeddings)
         labels = torch.tensor(labels).numpy()
-        
-        
+
+
         bow_file = [x for x in bow_embedding_files if datasetname in x][0]
         bow_embeddings, _,_,_,_,_  = torch.load(bow_file)
         bow_embeddings = np.squeeze(bow_embeddings)
@@ -167,7 +167,7 @@ def run_model_with_bow(embedding_files = ['embeddings/wav2vec2-base_librispeech_
                     'layer': layer,
                     'feature': 'EMB+BOW'
                 }
-                print(meta|results)         
+                print(meta|results)
 
 
 if __name__ == "__main__":
@@ -182,9 +182,9 @@ if __name__ == "__main__":
 
     # # Due to the large size of the BoW representation, it will take approx. 1hr to run for one dataset.
     # run_model(bow_embedding_files, combi = False)
-    
 
-    ## Run model with embedding concatenated with BoW representation is very 
+
+    ## Run model with embedding concatenated with BoW representation is very
     ## time consuming, be cautious
     # run_model_with_bow()
 

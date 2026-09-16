@@ -56,9 +56,9 @@ def make_dataset_csv(csv_file, dataset_root_dir, batch_size = 400, rewrite = Fal
         df = pd.DataFrame(data)
         df.to_csv(save_file, index =  False)
 
-def make_bow_model(save_path = 'bow_model.pt', 
-                   rewrite = False, 
-                   dataset_csvs = ['dataset_spokencoco_val.csv', 
+def make_bow_model(save_path = 'bow_model.pt',
+                   rewrite = False,
+                   dataset_csvs = ['dataset_spokencoco_val.csv',
                                    'dataset_librispeech_train-clean-100.csv']):
     '''
     save_path: path to save the bow model in
@@ -79,7 +79,7 @@ def make_bow_model(save_path = 'bow_model.pt',
         list_of_sents = list(map(remove_special_characters,list_of_sents))
         list_of_sents = [item.strip() for item in list_of_sents if item.replace(" ",'').isalpha()]
         unique_words = set(' '.join(list_of_sents).split())
-        print(f"there are {len(unique_words)} unique words for the bag of words model")        
+        print(f"there are {len(unique_words)} unique words for the bag of words model")
         cv = CountVectorizer(token_pattern=r"(?u)\b\w+\b")
         cv.fit(list_of_sents)
         torch.save(cv, save_path)
@@ -91,7 +91,7 @@ def main(spokencoco_root='~/SpokenCOCO/', spokencoco_split='val',
     # Dataset roots are machine-local and exposed as CLI options (see README
     # "Datasets").
 
-    # spokencoco pre-preprocessing 
+    # spokencoco pre-preprocessing
     spokencoco_csv = 'spokencoco_'+spokencoco_split+'.csv'
 
     if os.path.isfile(spokencoco_csv) == False:
@@ -105,8 +105,8 @@ def main(spokencoco_root='~/SpokenCOCO/', spokencoco_split='val',
         spokencoco_df.to_csv(spokencoco_csv, header=None, index = None)
     else:
         print(f"{spokencoco_csv} exists already! not overwriting")
-    
-    # librispeech pre-preprocessing 
+
+    # librispeech pre-preprocessing
     librispeech_csv = 'librispeech_'+libri_split+'.csv'
 
     if os.path.isfile(librispeech_csv) == False:

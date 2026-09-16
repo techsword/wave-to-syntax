@@ -31,7 +31,7 @@ def load_fast_vgs_model(model_path):
         args_dict = vars(args)
         args_dict['trim_mask'] = False
     model = w2v2_model.Wav2Vec2Model_cls(args)
-    model.carefully_load_state_dict(weights['dual_encoder']) 
+    model.carefully_load_state_dict(weights['dual_encoder'])
 
     return model
 
@@ -53,11 +53,11 @@ def select_vgs_model(modelname, fast_vgs_root='fast_vgs_family/model_path'):
         model = load_fast_vgs_model(checkpoint_id)
     else:
         raise NotImplementedError(f"loading {modelname} is not implemented")
-    hf_model = None   
+    hf_model = None
     tokenizer = None
     return model, tokenizer, MODEL_ID.split("/")[-1]
 
-def select_model(modelname):   
+def select_model(modelname):
     '''
     loads model using huggingface hub or local path, 
     returns (model, tokenizer, model_ID), if the model is not BERT or DeBERTa, tokenizer will be None
@@ -71,7 +71,7 @@ def select_model(modelname):
                    'bert':'bert-base-uncased',
                    'bert-large':'bert-large-uncased'}
     text_models = ['bert', 'bert-large']
-    
+
     if modelname in models_dict:
         MODEL_ID = models_dict[modelname]
         if modelname in text_models:
@@ -92,8 +92,8 @@ def select_model(modelname):
         save_path = 'bow_model.pt'
         model = torch.load(save_path)
         tokenizer = None
-    else: 
-        raise NotImplementedError(f"loading {modelname} is not implemented")    
+    else:
+        raise NotImplementedError(f"loading {modelname} is not implemented")
     return model, tokenizer, MODEL_ID.split("/")[-1]
 
 
@@ -118,10 +118,10 @@ def run_feat_gen(modelname='wav2vec2_small', dataset_csv="dataset_spokencoco_val
             raise LookupError(
                 f"loading {modelname} failed; check --fast_vgs_root and the "
                 f"FaST-VGS setup in the README") from err
-        
-    dataset_ID = dataset_csv.split(".")[0].split("-")[0].replace("dataset_", "")      
+
+    dataset_ID = dataset_csv.split(".")[0].split("-")[0].replace("dataset_", "")
     save_file = "_".join([model_ID,dataset_ID])+'_extracted.pt'
-    
+
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
@@ -151,7 +151,7 @@ def run_feat_gen(modelname='wav2vec2_small', dataset_csv="dataset_spokencoco_val
                     features = outputs.hidden_states
                     if CLS == True:
                         features = torch.stack(features).squeeze(1)[:,0].detach().cpu().numpy()
-                    else:                
+                    else:
                         features = torch.stack(features).squeeze(1).mean(1).detach().cpu().numpy()
                     feat_list.append(features)
             # tqdm.write(f"there are {len(feat_list)} in the extracted dataset, each tensor is {features[0].shape}")
@@ -174,7 +174,7 @@ def run_feat_gen(modelname='wav2vec2_small', dataset_csv="dataset_spokencoco_val
 
 
                     elif 'fast-vgs' in model_ID:
-                        
+
                         features = model(source=audio.squeeze(1).to(device), padding_mask=None, mask=False, superb=True)['hidden_states']
                     features = torch.stack(features).squeeze(1).mean(1).detach().cpu().numpy()
                     feat_list.append(features)

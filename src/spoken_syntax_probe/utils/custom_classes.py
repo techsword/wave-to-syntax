@@ -38,7 +38,7 @@ class Corpus(Dataset):
 
     def collate(self, batch):
         return batch
-    
+
 class textCorpus(Dataset):
 
     def __init__(self, csv_file, transform=None):
@@ -66,7 +66,7 @@ class textCorpus(Dataset):
 
     def collate(self, batch):
         return batch
-    
+
 class textCorpus_no_depth(Dataset):
 
     def __init__(self, csv_file):

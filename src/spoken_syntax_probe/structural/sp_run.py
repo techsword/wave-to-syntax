@@ -130,7 +130,7 @@ def gen_labels(seg_embs, save_file = 'structural_probe_spokencoco_labels.pt'):
     else:
         container = {}
         for i,(_,sent,_,_) in enumerate(tqdm(seg_embs)):
-            
+
             twd,wd = get_dep_distance_matrix(sent)
             container[i] = {'sent':sent, 'twd': twd, 'wd':wd}
         torch.save(container, save_file)
@@ -160,7 +160,7 @@ def custom_pad(batch):
     return seqs, labels, lengths, batch
 
 
-   
+
 def train_until_convergence(probe, loss, train_dataset, dev_dataset, layer = 0, max_epochs = 30, params_path = 'predictor.params', save_dir = 'sp_data/'):
     """ Trains a probe until a convergence criterion is met.
     Trains until loss on the development set does not improve by more than epsilon
@@ -196,7 +196,7 @@ def train_until_convergence(probe, loss, train_dataset, dev_dataset, layer = 0, 
         if not torch.isnan(batch_loss):
           batch_loss.backward()
           nn.utils.clip_grad_norm_(probe.parameters(), max_norm=2.0, norm_type=2)
-        
+
           epoch_train_loss += batch_loss.detach().cpu().numpy()*count.detach().cpu().numpy()
           epoch_train_epoch_count += 1
           epoch_train_loss_count += count.detach().cpu().numpy()
@@ -216,7 +216,7 @@ def train_until_convergence(probe, loss, train_dataset, dev_dataset, layer = 0, 
           epoch_dev_loss += batch_loss.detach().cpu().numpy()*count.detach().cpu().numpy()
           epoch_dev_loss_count += count.detach().cpu().numpy()
           epoch_dev_epoch_count += 1
-          
+
       scheduler.step(epoch_dev_loss)
       tqdm.write('[epoch {}] Train loss: {}, Dev loss: {}'.format(epoch_index, epoch_train_loss/epoch_train_loss_count, epoch_dev_loss/epoch_dev_loss_count))
 
@@ -229,7 +229,7 @@ def train_until_convergence(probe, loss, train_dataset, dev_dataset, layer = 0, 
       elif min_dev_loss_epoch < epoch_index - 4:
         tqdm.write('Early stopping')
         break
-      
+
 
 def predict(probe, dataset):
     """ Runs probe to compute predictions on a dataset.
@@ -277,8 +277,8 @@ def find_nans():
     probe.eval()
     scc_seg = LoadFromDisk_(torch.load('segmented_embeddings/wav2vec_small_spokencoco.pt'))
     labels = gen_labels(scc_seg)
-    scc_observations_raw = load_labels(scc_seg, labels, mode = 'twd')  
-    scc_observations = [x for x in scc_observations_raw if x[0].shape[1]==x[3]] 
+    scc_observations_raw = load_labels(scc_seg, labels, mode = 'twd')
+    scc_observations = [x for x in scc_observations_raw if x[0].shape[1]==x[3]]
     layer = 6
     layer_scc_observations = [tuple([x[0][layer,:,:]]+list(x[1:])) for x in scc_observations]
     train_data, test_data = train_test_split(layer_scc_observations,test_size=0.2, shuffle=False)
@@ -297,8 +297,8 @@ def find_nans():
                 print([x[1] for x in batch])
             lengths_to_spearmanrs[length].extend([x.correlation for x in spearmanrs])
     {length: np.mean(lengths_to_spearmanrs[length]) for length in lengths_to_spearmanrs}
-    
-            
+
+
 
 
 def main(args, emb_file, mode = 'twd'):
@@ -309,7 +309,7 @@ def main(args, emb_file, mode = 'twd'):
 
     scc_seg = LoadFromDisk_(scc_ds)
     labels = gen_labels(scc_seg)
-    scc_observations_raw = load_labels(scc_seg, labels, mode = mode)  
+    scc_observations_raw = load_labels(scc_seg, labels, mode = mode)
     scc_observations = [x for x in scc_observations_raw if x[0].shape[1]==x[3]] ### Filter out misaligned data entries
     if mode =='twd':
         probe_ = TwoWordPSDProbe(args)
@@ -325,7 +325,7 @@ def main(args, emb_file, mode = 'twd'):
     for layer in tqdm(range(scc_observations[0][0].shape[0]),desc='[layers]'):
         probe_params_path = '.'.join([modelname, datasetname, mode, 'layer_'+str(layer), "predictor.params"])
 
-        
+
         layer_scc_observations = [tuple([x[0][layer,:,:]]+list(x[1:])) for x in scc_observations]
         train_data, test_data = train_test_split(layer_scc_observations,test_size=0.2, shuffle=False)
         train_dataloader = DataLoader(train_data, batch_size=32, collate_fn=custom_pad, shuffle=False)
@@ -333,15 +333,15 @@ def main(args, emb_file, mode = 'twd'):
 
 
 
-        train_until_convergence(probe   = probe_, 
-                                loss    = loss_fn, 
-                                train_dataset=train_dataloader, 
-                                dev_dataset=test_dataloader, 
-                                max_epochs=30, 
-                                layer=layer, 
+        train_until_convergence(probe   = probe_,
+                                loss    = loss_fn,
+                                train_dataset=train_dataloader,
+                                dev_dataset=test_dataloader,
+                                max_epochs=30,
+                                layer=layer,
                                 params_path = probe_params_path)
-        run_report_results(probe = probe_, 
-                           dataset = test_dataloader, 
+        run_report_results(probe = probe_,
+                           dataset = test_dataloader,
                            reporter= reporter_fn,
                            layer=layer, mode = mode,
                            probe_params_path=probe_params_path)
@@ -354,25 +354,25 @@ def OneWordMain(args, emb_file, mode = 'wd'):
 
     scc_seg = LoadFromDisk_(scc_ds)
     labels = gen_labels(scc_seg)
-    scc_observations_raw = load_labels(scc_seg, labels, mode = mode)  
+    scc_observations_raw = load_labels(scc_seg, labels, mode = mode)
     scc_observations = [x for x in scc_observations_raw if x[0].shape[1]==x[3]] ### Filter out misaligned data entries
     for layer in range(scc_observations[0][0].shape[0]):
         probe_params_path = '.'.join([modelname, datasetname, mode, 'layer_'+str(layer), "predictor.params"])
-        
+
         layer_scc_observations = [tuple([x[0][layer,:,:]]+list(x[1:])) for x in scc_observations]
         train_data, test_data = train_test_split(layer_scc_observations,test_size=0.2, shuffle=False)
         train_dataloader = DataLoader(train_data, batch_size=32, collate_fn=custom_pad, shuffle=False)
         test_dataloader = DataLoader(test_data, batch_size=32, collate_fn=custom_pad, shuffle=False)
 
-        train_until_convergence(probe   = OneWordPSDProbe(args), 
-                                loss    = L1DepthLoss(args), 
-                                train_dataset=train_dataloader, 
-                                dev_dataset=test_dataloader, 
-                                max_epochs=30, 
-                                layer=layer, 
+        train_until_convergence(probe   = OneWordPSDProbe(args),
+                                loss    = L1DepthLoss(args),
+                                train_dataset=train_dataloader,
+                                dev_dataset=test_dataloader,
+                                max_epochs=30,
+                                layer=layer,
                                 params_path = probe_params_path)
-        run_report_results(probe = OneWordPSDProbe(args), 
-                            dataset = test_dataloader, 
+        run_report_results(probe = OneWordPSDProbe(args),
+                            dataset = test_dataloader,
                             reporter= WordReporter(args),
                             layer=layer, mode = mode,
                             probe_params_path=probe_params_path)
@@ -388,7 +388,7 @@ def analyze(result_dir = 'structural-probe-results/means/', mode = 'twd'):
         df = pd.read_csv(result_csv, index_col=0)
     else:
         mode_filter = '_'+mode
-        
+
         all_out = [x for x in os.listdir(result_dir) if os.path.isfile(os.path.join(result_dir,x)) and mode_filter in x]
         mean_out = [x for x in all_out if 'mean' in x]
         result_dict = {}
@@ -428,7 +428,7 @@ def analyze(result_dir = 'structural-probe-results/means/', mode = 'twd'):
     mode_dict = {'twd': 'Word Distance Task',
                  'wd': 'Word Depth Task'}
     figure = (p9.ggplot(df,p9.aes('norm_layer', 'spearmanr', color='model', shape = 'dataset'))
-        + p9.geom_point() 
+        + p9.geom_point()
         # + p9.scale_color_manual(colors)
         + p9.geom_line()
         + p9.theme_linedraw()
@@ -476,7 +476,7 @@ def interactive_run_this(result_dir='structural-probe-results/varying_mtl'):
                 'wd': 'Word Depth Task'}
 
     figure = (p9.ggplot(df,p9.aes('norm_layer', 'spearmanr', color='model', shape = 'dataset'))
-        + p9.geom_point() 
+        + p9.geom_point()
         # + p9.scale_color_manual(colors)
         + p9.geom_line()
         + p9.theme_linedraw()

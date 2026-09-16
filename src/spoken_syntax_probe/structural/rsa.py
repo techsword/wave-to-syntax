@@ -50,7 +50,7 @@ def pairwise_distance_calc(embedding_file,pd_save_path, rewrite = False, device 
         # return pairwise_distance_container
 
 def compute_pairwise_dist_for_embs(embedding_path = 'embeddings', pd_save_path = 'pairwise_distances', rewrite = False, device = 'cuda'):
-    emb_files = [os.path.join(embedding_path, x) for x in os.listdir(embedding_path) if 'extracted.pt' in x]    
+    emb_files = [os.path.join(embedding_path, x) for x in os.listdir(embedding_path) if 'extracted.pt' in x]
     for embedding_file in tqdm(emb_files):
         if 'BOW' in embedding_file:
             device = 'cpu'
@@ -63,8 +63,8 @@ def compute_pairwise_dist_for_embs(embedding_path = 'embeddings', pd_save_path =
 
 
 
-def pearson_r_score(Y_true, Y_pred): 
-     r =  U.pearson_r(Y_true, Y_pred, axis=0).mean() 
+def pearson_r_score(Y_true, Y_pred):
+     r =  U.pearson_r(Y_true, Y_pred, axis=0).mean()
      return r
 
 
@@ -127,8 +127,8 @@ def load_kernel_pairs(kernel_path):
     return np.array(rows[:, 0], dtype=float), np.array(rows[:, 1:]).astype(int)
 
 
-def main(alpha = 0.5, seed = 42, 
-         delexed = True, 
+def main(alpha = 0.5, seed = 42,
+         delexed = True,
          tree_kernel_path = 'tree_kernel',
          pairwise_distance_path = 'pairwise_distances'
              ):

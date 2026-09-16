@@ -90,10 +90,10 @@ def generate_kernel_regress(tree_paths, seed = 42, alpha = 0.5, num_anchors = 20
                 for test_pt in tqdm(test_pts):
                     tree_kernel_container.append(compute_kernel(
                         K, test_pt, ref_pts, normalization, anchor_trees, anchor_self))
-                
+
             torch.save(tree_kernel_container, save_file)
 
-    
+
 if __name__ == "__main__":
     tree_paths = [x for x in os.listdir() if 'generated_trees' in x]
     generate_kernel_regress(tree_paths,parallel=True)

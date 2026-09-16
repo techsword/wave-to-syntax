@@ -22,7 +22,7 @@ def segment_audio_emb(emb, segment_df, audio_len):
     segment_dict = segment_df.iloc[:,3:].to_dict()
     segments = torch.zeros(len(segment_df), 768)
     for i, x in enumerate(segment_dict['transcription']):
-        # segment_tensor = 
+        # segment_tensor =
         segment_start = segment_dict['startFrame'][x]
         segment_end = segment_dict['endFrame'][x]
         segment_tensor = torch.mean(emb[:,segment_start:segment_end,:].cpu().squeeze(),0,True)
@@ -45,7 +45,7 @@ def generating_features(dataset, model, aligned_path, layer = 12, sr = 16000):
     for waveform, annot, audio_file, csv_file in tqdm(dataset):
         if len(str.split(annot)) > len_ceil:
             continue
-            
+
         total_frames = waveform.shape[1]
         segment_df = pd.read_csv(csv_file)
         audio_len = total_frames/sr

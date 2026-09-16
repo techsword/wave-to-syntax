@@ -57,7 +57,7 @@ def main_prep():
     do_scc_prep()
 
 
-def convert_tg_to_csv(tg_file):    
+def convert_tg_to_csv(tg_file):
     # Read a TextGrid object from a file.
     tg = textgrid.TextGrid.fromFile(tg_file)
     list_of_aligned_words = []
@@ -67,7 +67,7 @@ def convert_tg_to_csv(tg_file):
         else:
             word = x.mark
         list_of_aligned_words.append((x.minTime, x.maxTime, word))
-        
+
     df = pd.DataFrame(list_of_aligned_words, columns = ['startTime', 'endTime', 'transcription'])
     csv_name = os.path.basename(tg_file).split('.')[0]+'.csv'
 

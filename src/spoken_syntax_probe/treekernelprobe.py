@@ -34,7 +34,7 @@ def load_embs(embedding_file, ceil,ref_sent_idx, test_sent_idx):
     test_embs = np.take(filtered_embs, test_sent_idx.astype(int), axis = 0)
 
     return modelname, datasetname, ref_embs, test_embs
-    
+
 def kernel_dataset_name(tree_kernel_file):
     """Map a tree-kernel filename to its corpus name.
 
