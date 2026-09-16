@@ -1,15 +1,12 @@
-import json
 import os
 import random
 
 import numpy as np
 import torch
-import ursa.util as U
 from tqdm.auto import tqdm
 from ursa.kernel import Kernel, delex
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-from nltk.tree import Tree
 
 
 # Default workers: trust the environment — SLURM's allocation when running

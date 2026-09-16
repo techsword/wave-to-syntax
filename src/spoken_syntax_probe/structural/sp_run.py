@@ -9,23 +9,17 @@ The flat-schema probe, loss, and reporter classes live in
 """
 
 import argparse
-import math
 import os
-import random
 import sys
-from itertools import islice
 
 import networkx as nx
 import numpy as np
-import pandas as pd
 import spacy
-import textgrid
 import torch
 import torch.nn as nn
 from sklearn.model_selection import train_test_split
 from torch import optim
 from torch.utils.data import DataLoader, Dataset
-from torchmetrics.functional import pairwise_cosine_similarity
 from tqdm.auto import tqdm
 
 from .flat_probe_utils import (L1DepthLoss, L1DistanceLoss,

@@ -1,6 +1,4 @@
-import json
 import os
-import random
 
 import numpy as np
 import torch
@@ -9,8 +7,6 @@ from tqdm.auto import tqdm
 from ursa.regress import Regress
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-import ursa.util as U
-from nltk.tree import Tree
 
 
 def load_tree_kernel(tree_kernel_file):

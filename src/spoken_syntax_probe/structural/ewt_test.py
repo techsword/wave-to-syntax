@@ -7,7 +7,7 @@ import pandas as pd
 import numpy as np
 import torch
 import ursa.util as U
-from sklearn.linear_model import Ridge, RidgeCV
+from sklearn.linear_model import Ridge
 from sklearn.metrics import make_scorer, mean_squared_error, r2_score
 from sklearn.model_selection import GridSearchCV
 from torchmetrics.functional import pairwise_cosine_similarity
@@ -16,8 +16,6 @@ from ursa.kernel import Kernel
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 from nltk.tree import Tree
-
-import sys
 
 def ewt_json_all():
     import conllu as U

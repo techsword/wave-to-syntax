@@ -4,14 +4,12 @@
 
 import os
 import pickle
-from itertools import islice
 
 import numpy as np
 import torch
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
-from transformers import (AutoModel, AutoTokenizer, Wav2Vec2Config,
-                          Wav2Vec2Model)
+from transformers import (AutoModel, AutoTokenizer, Wav2Vec2Config)
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -22,7 +20,7 @@ def load_fast_vgs_model(model_path):
     '''
     instructions on https://github.com/jasonppy/FaST-VGS-Family
     '''
-    from fast_vgs_family.models import fast_vgs, w2v2_model
+    from fast_vgs_family.models import w2v2_model
 
     # load args
     with open(f"{model_path}/args.pkl", "rb") as f:

@@ -1,17 +1,12 @@
-import argparse
 import os
-from itertools import islice
 
 import numpy as np
-import pandas as pd
 import torch
-from sklearn.linear_model import LogisticRegression, RidgeCV, Ridge
-from sklearn.metrics import (accuracy_score, confusion_matrix,
-                             mean_squared_error, r2_score)
+from sklearn.linear_model import LogisticRegression, RidgeCV
+from sklearn.metrics import (accuracy_score, mean_squared_error, r2_score)
 from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
 from tqdm.auto import tqdm
-from sklearn.preprocessing import Normalizer as Norm
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 

@@ -6,9 +6,6 @@ import gc
 import os
 
 import ursa.util as U
-from scipy.spatial.distance import cosine
-from scipy.stats import pearsonr
-from sklearn.metrics import pairwise_distances
 from torchmetrics.functional import pairwise_cosine_similarity
 from tqdm.auto import tqdm
 

@@ -1,16 +1,15 @@
 import os
 import re
 
-import numpy as np
 import pandas as pd
 import stanza
 import torch
 from nltk import Tree
 from sklearn.feature_extraction.text import CountVectorizer
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 
-from .utils.custom_classes import textCorpus, textCorpus_no_depth
+from .utils.custom_classes import textCorpus_no_depth
 from .utils.custom_functions import read_json_save_csv, walk_librispeech_dirs
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'

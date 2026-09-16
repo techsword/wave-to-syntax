@@ -10,7 +10,7 @@ import os
 import random
 
 from tqdm import tqdm
-from scipy.stats import spearmanr, pearsonr
+from scipy.stats import spearmanr
 import numpy as np 
 import json
 
