@@ -1,11 +1,16 @@
-"""Tree-kernel fixtures applicable to the public module set.
+"""Fixtures (b) and (c): tree-kernel filenames/splits and EWT regression.
 
-Ported from the private suite. The private-only structural assertions are
-intentionally dropped: the public repo does not ship ``rsa.py`` or ``ewt.json``,
-so the EWT slice regression and the RSA Pearson tests are omitted here.
+Fixture (b) builds six synthetic trees (one longer than the word limit) and
+checks the tree-kernel output filename, the anchor/test split, and the
+filename-driven word limit.
 
-The two tests below are deterministic, corpus-free, and CPU-only.
+Fixture (c) slices the tracked ``ewt.json`` and checks the tree-kernel values
+and the RSA Pearson score. Both fixtures are deterministic, corpus-free, and
+CPU-only.
 """
+
+import json
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -13,6 +18,9 @@ import torch
 from nltk.tree import Tree
 
 from spoken_syntax_probe import treekernel_prep, treekernelprobe
+from spoken_syntax_probe.structural import rsa
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
 
 _SHORT_TREES = [
     ("(S (NP (DT The) (NN cat)) (VP (VBZ sleeps)))", "The cat sleeps"),
@@ -89,3 +97,63 @@ def test_load_tree_kernel_filename_word_limit(tmp_path, name, expected_limit):
     assert tk.shape == (2, 2)
     assert ref_idx.tolist() == [0, 1]
     assert test_idx.tolist() == [0, 1]
+
+
+def _ewt_slice(count=3):
+    data = json.loads((REPO_ROOT / "ewt.json").read_text())
+    return data["test"][:count]
+
+
+def _normalized_kernel(a, b):
+    from ursa.kernel import Kernel, delex
+
+    kernel = Kernel(alpha=0.5)
+    delexed_a, delexed_b = delex(a), delex(b)
+    denominator = (kernel(delexed_a, delexed_a) * kernel(delexed_b, delexed_b)) ** 0.5
+    return kernel(delexed_a, delexed_b) / denominator
+
+
+def test_ewt_slice_tree_kernel_regression():
+    trees = [Tree.fromstring(item["tree"]) for item in _ewt_slice()]
+    kernel_vector = np.array(
+        [
+            _normalized_kernel(trees[0], trees[1]),
+            _normalized_kernel(trees[0], trees[2]),
+            _normalized_kernel(trees[1], trees[2]),
+        ]
+    )
+    np.testing.assert_allclose(
+        kernel_vector,
+        [0.0992966161862378, 0.11985340431738455, 0.14494041391118112],
+        rtol=1e-9,
+        atol=1e-12,
+    )
+
+
+def test_ewt_slice_rsa_regression():
+    from torchmetrics.functional import pairwise_cosine_similarity
+
+    items = _ewt_slice()
+    trees = [Tree.fromstring(item["tree"]) for item in items]
+    kernel_vector = np.array(
+        [
+            _normalized_kernel(trees[0], trees[1]),
+            _normalized_kernel(trees[0], trees[2]),
+            _normalized_kernel(trees[1], trees[2]),
+        ]
+    )
+
+    def features(item):
+        tokens = item["sent"].split()
+        punctuation = sum(1 for token in tokens if any(c in token for c in ",.!?"))
+        longest = max(len(token) for token in tokens)
+        mean_length = sum(len(token) for token in tokens) / len(tokens)
+        return [len(tokens), punctuation, longest, mean_length]
+
+    embeddings = torch.tensor([features(item) for item in items], dtype=torch.float)
+    similarity = pairwise_cosine_similarity(embeddings).numpy()
+    similarity_vector = np.array([similarity[0, 1], similarity[0, 2], similarity[1, 2]])
+
+    assert rsa.pearson_r_score(kernel_vector, similarity_vector) == pytest.approx(
+        -0.27524623274417354, abs=1e-9
+    )

@@ -1,12 +1,9 @@
-"""torch.save protocol-5 round-trip for the large segmented-embedding artefact.
+"""torch.save protocol-5 round-trip for the large structural artefacts.
 
-The feature-list save in ``extract_segmented_embeddings.py`` writes a
-many-small-array object. Verify that the protocol-5 legacy settings used at
-that call site round-trip an identical object, and that the call site keeps
-using those settings. No corpora are needed.
-
-(The private suite also checks ``structural/rsa.py``; the public repo does not
-ship that module, so it is omitted here.)
+Both patched call sites save many-small-array objects (per-layer N*N cosine
+similarity matrices; per-utterance feature lists). Verify that the protocol-5
+legacy settings used at those call sites round-trip an identical object, and
+that the call sites keep using those settings. No corpora are needed.
 """
 
 from pathlib import Path
@@ -19,6 +16,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 KWARGS = {"pickle_protocol": 5, "_use_new_zipfile_serialization": False}
 
 PATCHED_FILES = [
+    REPO_ROOT / "src" / "spoken_syntax_probe" / "structural" / "rsa.py",
     REPO_ROOT / "src" / "spoken_syntax_probe" / "extract_segmented_embeddings.py",
 ]
 

@@ -38,9 +38,18 @@ dependencies = [
     "tqdm==4.66.5",
     "TextGrid==1.6.1",
 
+    # Structural-probe suite (sp_run / rsa / ewt_test).
+    "matplotlib>=3.8",
+    "seaborn>=0.13",
+    "spacy>=3.8,<3.9",
+    "en-core-web-sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl",
+
     # `ursa` is a git dependency, pinned to the commit used for the tree-kernel
-    # analysis.
+    # and RSA analysis.
     "ursa @ git+https://github.com/gchrupala/ursa@3dca2f1e68f312623d9e57e41aa9f8810fb0910f",
+    "plotnine",
+    "networkx",
+    "conllu",
 ]
 
 # PyTorch is provided through the extras below. Select exactly one extra
