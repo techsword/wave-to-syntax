@@ -18,6 +18,10 @@ KWARGS = {"pickle_protocol": 5, "_use_new_zipfile_serialization": False}
 PATCHED_FILES = [
     REPO_ROOT / "src" / "spoken_syntax_probe" / "structural" / "rsa.py",
     REPO_ROOT / "src" / "spoken_syntax_probe" / "extract_segmented_embeddings.py",
+    REPO_ROOT / "src" / "spoken_syntax_probe" / "structural" / "ewt_test.py",
+    REPO_ROOT / "src" / "spoken_syntax_probe" / "treekernel_prep.py",
+    REPO_ROOT / "src" / "spoken_syntax_probe" / "embedding_generation.py",
+    REPO_ROOT / "src" / "spoken_syntax_probe" / "preprocessing.py",
 ]
 
 

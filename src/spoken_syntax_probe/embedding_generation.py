@@ -181,7 +181,10 @@ def run_feat_gen(modelname='wav2vec2_small', dataset_csv="dataset_spokencoco_val
                     features = torch.stack(features).squeeze(1).mean(1).detach().cpu().numpy()
                     feat_list.append(features)
         tqdm.write(f'finished generation and saving features to {save_file}')
-        torch.save([feat_list, lab_list,annot_list,wav_path_list, wordcount_list, audiolen_list], os.path.join(save_dir,save_file), pickle_protocol = 4)
+        # Protocol 5 legacy serialization: load-identical format, lower peak
+        # memory on the many-small-array feature lists (see rsa.py).
+        torch.save([feat_list, lab_list,annot_list,wav_path_list, wordcount_list, audiolen_list], os.path.join(save_dir,save_file),
+                   pickle_protocol=5, _use_new_zipfile_serialization=False)
 
 
 if __name__ == "__main__":

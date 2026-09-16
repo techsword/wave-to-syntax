@@ -95,7 +95,10 @@ def generate_kernel_regress(tree_paths, seed = 42, alpha = 0.5, num_anchors = 20
                     tree_kernel_container.append(compute_kernel(
                         K, test_pt, ref_pts, normalization, anchor_trees, anchor_self))
                 
-            torch.save(tree_kernel_container, save_file)
+            # Protocol 5 legacy serialization: load-identical format, lower
+            # peak memory on many-small-array artefacts (see rsa.py).
+            torch.save(tree_kernel_container, save_file,
+                       pickle_protocol=5, _use_new_zipfile_serialization=False)
 
     
 if __name__ == "__main__":

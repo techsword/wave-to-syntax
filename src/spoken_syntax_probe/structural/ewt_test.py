@@ -105,7 +105,8 @@ def generate_kernel_ewt(ref_pts, test_pts, alpha = 0.5, save_path = 'regress-dat
                 tree_kernel_container.append(compute_kernel_(K,test_pt, ref_pts, normalization))
             
         # return tree_kernel_container
-        torch.save(tree_kernel_container, save_file)
+        torch.save(tree_kernel_container, save_file,
+                   pickle_protocol=5, _use_new_zipfile_serialization=False)
     return tree_kernel_container
     
 
@@ -176,7 +177,8 @@ def ewt_test(json_file = 'ewt.json',kernel_path = 'ewt_test_data/ewt_original_tk
         model, tokenizer, MODEL_ID = load_model(model_ID)
         embs = {'ref':sent_emb(sent_ref,tokenizer, model), 
             'test':sent_emb(sent_test,tokenizer, model)}
-        torch.save(embs, embs_file)
+        torch.save(embs, embs_file,
+                   pickle_protocol=5, _use_new_zipfile_serialization=False)
     
     # emb_test = sent_emb(sent_test, tokenizer, model)
     # emb_ref = sent_emb(sent_ref, tokenizer, model)

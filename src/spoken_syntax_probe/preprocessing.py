@@ -52,7 +52,10 @@ def make_dataset_csv(csv_file, dataset_root_dir, batch_size = 400, rewrite = Fal
                 tree = Tree.fromstring(str(doc.sentences[0].constituency))
                 annot = doc.text
                 list_of_trees.append((tree,annot))
-        torch.save(list_of_trees, tree_save_file)
+        # Protocol 5 legacy serialization: load-identical format, lower peak
+        # memory on many-small-array artefacts (see rsa.py).
+        torch.save(list_of_trees, tree_save_file,
+                   pickle_protocol=5, _use_new_zipfile_serialization=False)
 
         df = pd.DataFrame(data)
         df.to_csv(save_file, index =  False)
@@ -83,7 +86,8 @@ def make_bow_model(save_path = 'bow_model.pt',
         print(f"there are {len(unique_words)} unique words for the bag of words model")        
         cv = CountVectorizer(token_pattern=r"(?u)\b\w+\b")
         cv.fit(list_of_sents)
-        torch.save(cv, save_path)
+        torch.save(cv, save_path,
+                   pickle_protocol=5, _use_new_zipfile_serialization=False)
     return cv
 
 
