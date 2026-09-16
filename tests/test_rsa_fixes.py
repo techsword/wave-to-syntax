@@ -1,9 +1,10 @@
 """Regression tests for the ``rsa.py`` scoring fixes.
 
-Covers the three known scoring bugs: the ``'scc'``-only kernel mapping (and the
+Covers the known scoring bugs: the ``'scc'``-only kernel mapping (and the
 unbound ``list_of_files`` it caused for ``spokencoco_val`` kernels), the broken
-Pearson branch (result-object handling and the one-layer-per-file format), and
-the filename-derived layer index. Corpus-free and CPU-only.
+Pearson branch (result-object handling and the one-layer-per-file format), the
+filename-derived layer index, and the nested output directory that an
+underscored embedding directory produces. Corpus-free and CPU-only.
 """
 
 import numpy as np
@@ -167,3 +168,43 @@ def test_main_scores_a_regress_kernel_end_to_end(tmp_path, monkeypatch):
     kernel_values, pairs = calls[0]
     assert np.allclose(kernel_values, [0.8, 0.9, 0.7, 0.6])
     assert np.array_equal(pairs, np.array([[0, 0], [1, 0], [0, 1], [1, 1]]))
+
+
+def test_pairwise_distances_create_nested_dir_for_underscored_embedding_path(tmp_path, monkeypatch):
+    """Regression: an underscore in the embedding *directory* nests the output.
+
+    ``datasetname`` is ``embedding_file.split('_', 1)[1]``, so a directory name
+    such as ``rsa_flat`` leaks a path separator into the save name. A fresh run
+    directory must not raise ``FileNotFoundError``, and the nested filename
+    convention must stay unchanged. Paths stay relative, as in the CLI run.
+    """
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "rsa_flat").mkdir()
+    embeddings = np.arange(2 * 2 * 3, dtype=float).reshape(2, 2, 3)
+    torch.save((embeddings, None, ["a b", "c d"], None, None, None),
+               tmp_path / "rsa_flat" / "wav2vec2-base_spokencoco_val_extracted.pt")
+
+    rsa.compute_pairwise_dist_for_embs(
+        embedding_path="rsa_flat", pd_save_path="pairwise_distances", device="cpu")
+
+    nested = tmp_path / "pairwise_distances" / "wav2vec2-base_flat"
+    layer_0 = nested / "wav2vec2-base_spokencoco_val_0_pd.pt"
+    assert layer_0.is_file()
+    assert (nested / "wav2vec2-base_spokencoco_val_1_pd.pt").is_file()
+    assert torch.load(layer_0, weights_only=False).shape == (2, 2)
+
+
+def test_pairwise_distance_calc_keeps_flat_convention_without_underscore(tmp_path, monkeypatch):
+    """The fix only creates directories; the flat path convention is unchanged."""
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "embeddings").mkdir()
+    embeddings = np.arange(2 * 2 * 3, dtype=float).reshape(2, 2, 3)
+    torch.save((embeddings, None, ["a b", "c d"], None, None, None),
+               tmp_path / "embeddings" / "wav2vec2-base_spokencoco_val_extracted.pt")
+
+    rsa.pairwise_distance_calc(
+        "embeddings/wav2vec2-base_spokencoco_val_extracted.pt",
+        "pairwise_distances", device="cpu")
+
+    assert (tmp_path / "pairwise_distances" /
+            "wav2vec2-base_spokencoco_val_0_pd.pt").is_file()
