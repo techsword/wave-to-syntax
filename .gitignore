@@ -31,6 +31,11 @@ aligned/
 *.csv
 *.out
 
+# Generated structural-probe outputs
+structural-probe-results/*.png
+structural-probe-results/**/*.png
+structural-probe-results/**/*.spearmanr*
+
 # Fine-tuning outputs and inputs (generated locally, not shipped)
 combined_libri_scc_DS/
 finetuned-wav2vec-base/
